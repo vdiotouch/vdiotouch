@@ -1,6 +1,8 @@
 # Video Touch
 > Video Touch is a Video Hosting & Streaming platform. In Video Touch users can easily upload, manage and stream videos on demand.
 
+<img src ="images/dashboard.png"/>
+  
 ## Table Of Contents
 - [The Goals of This Project](#goal)
 - [Features](#features)
