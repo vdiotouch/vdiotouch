@@ -5,7 +5,7 @@ import { BasePaginatedResponse } from '@/src/common/database/models/abstract.mod
 import { StatusDocument } from '@/src/api/assets/schemas/status.schema';
 import { StatusLogResponse } from '@/src/api/assets/models/status-logs.model';
 import { CreateAssetFromUploadInputDto, CreateAssetInputDto } from '@/src/api/assets/dtos/create-asset-input.dto';
-import { Constants } from '@toufiq-austcse/video-touch-common';
+import { Constants } from 'video-touch-common';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { UserDocument } from '@/src/api/auth/schemas/user.schema';
 

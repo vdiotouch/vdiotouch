@@ -1,7 +1,7 @@
 import { Injectable, Scope } from '@nestjs/common';
 import DataLoader from 'dataloader';
 import { FileRepository } from '@/src/api/assets/repositories/file.repository';
-import { FILE_STATUS, FILE_TYPE } from '@toufiq-austcse/video-touch-common/dist/constants';
+import { FILE_STATUS, FILE_TYPE } from 'video-touch-common/dist/constants';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import mongoose from 'mongoose';
 import { FileMapper } from '@/src/api/assets/mapper/file.mapper';

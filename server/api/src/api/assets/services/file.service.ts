@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Constants } from '@toufiq-austcse/video-touch-common';
+import { Constants } from 'video-touch-common';
 import { FileRepository } from '@/src/api/assets/repositories/file.repository';
 import mongoose from 'mongoose';
 import { FileDocument } from '@/src/api/assets/schemas/files.schema';

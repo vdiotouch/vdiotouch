@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { AssetRepository } from '@/src/api/assets/repositories/asset.repository';
 import mongoose from 'mongoose';
-import { Models } from '@toufiq-austcse/video-touch-common';
+import { Models } from 'video-touch-common';
 
 @Injectable()
 export class UpdateAssetEventConsumer {
