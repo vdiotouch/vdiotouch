@@ -1,7 +1,7 @@
 import { S3ClientService } from '@/src/common/aws/s3/s3-client.service';
 import { RabbitMqService } from '@/src/common/rabbit-mq/service/rabbitmq.service';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
-import { Constants, Models, terminal, Utils } from '@toufiq-austcse/video-touch-common';
+import { Constants, Models, terminal, Utils } from 'video-touch-common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import * as process from 'node:process';
 import * as console from 'node:console';

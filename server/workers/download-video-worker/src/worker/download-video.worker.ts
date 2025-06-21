@@ -1,5 +1,5 @@
 import { DownloaderHttpService } from '@/src/common/http-clients/downloader/downloader-http.service';
-import { Models, Utils, Constants } from '@toufiq-austcse/video-touch-common';
+import { Models, Utils, Constants } from 'video-touch-common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import * as process from 'node:process';
 import * as console from 'node:console';

@@ -3,7 +3,7 @@ import fs from 'fs';
 import * as AWS from 'aws-sdk';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { UploadObjModel } from '@/src/common/aws/s3/models/upload-obj.model';
-import { Models, Utils } from '@toufiq-austcse/video-touch-common';
+import { Models, Utils } from 'video-touch-common';
 
 
 @Injectable()
