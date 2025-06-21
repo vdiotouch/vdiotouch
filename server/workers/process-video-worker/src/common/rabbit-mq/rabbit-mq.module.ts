@@ -12,8 +12,8 @@ import { AppConfigService } from '@/src/common/app-config/service/app-config.ser
         console.log('RABBIT_MQ_URL ', AppConfigService.appConfig.RABBIT_MQ_URL);
         return {
           uri: AppConfigService.appConfig.RABBIT_MQ_URL,
-          connectionInitOptions: { wait: true },
-          prefetchCount: AppConfigService.appConfig.RABBIT_MQ_PROCESS_VIDEO_PREFETCH_COUNT
+          connectionInitOptions: { wait: true }
+
         };
       }
     })

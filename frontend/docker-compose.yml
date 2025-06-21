@@ -1,7 +1,7 @@
 version: "3.7"
 services:
   video-touch-web:
-    image: 578965/video-touch-web
+    image: .
     container_name: video-touch-web
     ports:
       - "3009:3000"

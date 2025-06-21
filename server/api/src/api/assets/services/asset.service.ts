@@ -5,7 +5,6 @@ import { AssetRepository } from '@/src/api/assets/repositories/asset.repository'
 import { ListAssetInputDto } from '@/src/api/assets/dtos/list-asset-input.dto';
 import { GetAssetInputDto } from '@/src/api/assets/dtos/get-asset-input.dto';
 import { UpdateAssetInputDto } from '@/src/api/assets/dtos/update-asset-input.dto';
-import { RabbitMqService } from '@/src/common/rabbit-mq/service/rabbitmq.service';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import mongoose from 'mongoose';
 import fs from 'fs';
@@ -17,14 +16,22 @@ import { Constants, Models, Utils } from '@toufiq-austcse/video-touch-common';
 import { HeightWidthMap } from '@/src/api/assets/models/file.model';
 import { FileDocument } from '@/src/api/assets/schemas/files.schema';
 import { UserDocument } from '@/src/api/auth/schemas/user.schema';
+import { Queue } from 'bullmq';
+import { InjectQueue } from '@nestjs/bullmq';
 
 @Injectable()
 export class AssetService {
   constructor(
     private repository: AssetRepository,
-    private rabbitMqService: RabbitMqService,
     private fileRepository: FileRepository,
-    private jobManagerService: JobManagerService
+    private jobManagerService: JobManagerService,
+    @InjectQueue('process_video_360p') private videoProcessQueue360p: Queue,
+    @InjectQueue('process_video_480p') private videoProcessQueue480p: Queue,
+    @InjectQueue('process_video_540p') private videoProcessQueue540p: Queue,
+    @InjectQueue('process_video_720p') private videoProcessQueue720p: Queue,
+    @InjectQueue('validate-video') private validateVideoQueue: Queue,
+    @InjectQueue('thumbnail-generation') private thumbnailGenerationQueue: Queue,
+    @InjectQueue('download-video') private downloadVideoQueue: Queue
   ) {}
 
   async create(createVideoInput: CreateAssetInputDto, userDocument: UserDocument) {
@@ -102,20 +109,17 @@ export class AssetService {
       'Downloading assets'
     );
     let downloadVideoJob = this.buildDownloadVideoJob(videoDocument);
-    return this.rabbitMqService.publish(
-      AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE,
-      AppConfigService.appConfig.RABBIT_MQ_DOWNLOAD_VIDEO_ROUTING_KEY,
-      downloadVideoJob
-    );
+    console.log('pubsh download video job to ', AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE);
+    return this.downloadVideoQueue.add(AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE, downloadVideoJob, {
+      jobId: videoDocument._id.toString(),
+      removeOnComplete: true,
+      removeOnFail: true,
+    });
   }
 
   async pushValidateVideoJob(assetId: string) {
     let validateVideoJob = this.buildValidateVideoJob(assetId);
-    return this.rabbitMqService.publish(
-      AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE,
-      AppConfigService.appConfig.RABBIT_MQ_VALIDATE_VIDEO_ROUTING_KEY,
-      validateVideoJob
-    );
+    return this.validateVideoQueue.add(AppConfigService.appConfig.BULL_VALIDATE_JOB_QUEUE, validateVideoJob);
   }
 
   private buildDownloadVideoJob(videoDocument: AssetDocument): Models.VideoDownloadJobModel {
@@ -223,22 +227,25 @@ export class AssetService {
     }
   }
 
-  publishVideoProcessingJob(assetId: string, jobMetadata: Models.JobMetadataModel[]) {
-    jobMetadata.forEach((data) => {
+  async publishVideoProcessingJob(assetId: string, jobMetadata: Models.JobMetadataModel[]) {
+    for (let data of jobMetadata) {
       let jobModel: Models.VideoProcessingJobModel = {
         asset_id: assetId,
         file_id: data.file_id.toString(),
         height: data.height,
         width: data.width,
       };
-
-      this.rabbitMqService.publish(
-        AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE,
-        data.processRoutingKey,
-        jobModel
-      );
-      console.log('published video processing job', data.processRoutingKey);
-    });
+      console.log('publishing video processing job for ', data.processRoutingKey, jobModel);
+      if (jobModel.height === 360) {
+        await this.videoProcessQueue360p.add(data.processRoutingKey, jobModel);
+      } else if (jobModel.height === 480) {
+        await this.videoProcessQueue480p.add(data.processRoutingKey, jobModel);
+      } else if (jobModel.height === 540) {
+        await this.videoProcessQueue540p.add(data.processRoutingKey, jobModel);
+      } else if (jobModel.height === 720) {
+        await this.videoProcessQueue720p.add(data.processRoutingKey, jobModel);
+      }
+    }
   }
 
   private async insertFilesData(assetId: string, heightWidthMaps: HeightWidthMap[]) {
@@ -305,9 +312,8 @@ export class AssetService {
       asset_id: assetId,
       file_id: fileId,
     };
-    this.rabbitMqService.publish(
-      AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE,
-      AppConfigService.appConfig.RABBIT_MQ_THUMBNAIL_GENERATION_ROUTING_KEY,
+    return this.thumbnailGenerationQueue.add(
+      AppConfigService.appConfig.BULL_THUMBNAIL_GENERATION_JOB_QUEUE,
       thumbnailGenerationJob
     );
   }
