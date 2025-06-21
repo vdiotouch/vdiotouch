@@ -1,8 +1,6 @@
 export interface EnvironmentVariables {
   UPLOAD_VIDEO_WORKER_PORT: number;
   RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE: string;
-  RABBIT_MQ_UPLOAD_VIDEO_ROUTING_KEY: string;
-  RABBIT_MQ_UPLOAD_VIDEO_QUEUE: string;
   RABBIT_MQ_URL: string;
   AWS_S3_BUCKET_NAME: string;
   AWS_REGION: string;
@@ -12,5 +10,7 @@ export interface EnvironmentVariables {
   RABBIT_MQ_UPDATE_FILE_STATUS_ROUTING_KEY: string;
   TEMP_VIDEO_DIRECTORY: string;
   AWS_PROFILE_NAME: string;
-  RABBIT_MQ_UPLOAD_VIDEO_PREFETCH_COUNT: number;
+  BULL_UPLOAD_JOB_QUEUE: string;
+  REDIS_HOST: string;
+  REDIS_PORT: number;
 }

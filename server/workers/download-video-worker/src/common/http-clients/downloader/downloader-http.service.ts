@@ -5,11 +5,9 @@ import * as fs from 'fs';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import * as readline from 'readline';
 
-
 @Injectable()
 export class DownloaderHttpService {
-  constructor(private httpService: HttpService) {
-  }
+  constructor(private httpService: HttpService) {}
 
   async download(url: string) {
     let response = await firstValueFrom(this.httpService.get(url, { responseType: 'stream' }));

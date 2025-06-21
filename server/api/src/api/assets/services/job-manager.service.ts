@@ -31,20 +31,19 @@ export class JobManagerService {
     ];
   }
 
-  getHeightWiseRoutingKey(height: number) {
+
+  getHeightWiseQueueName(height: number) {
     switch (height) {
-      case 1080:
-        return AppConfigService.appConfig.RABBIT_MQ_1080P_PROCESS_VIDEO_ROUTING_KEY;
       case 720:
-        return AppConfigService.appConfig.RABBIT_MQ_720P_PROCESS_VIDEO_ROUTING_KEY;
+        return AppConfigService.appConfig.BULL_720P_PROCESS_VIDEO_JOB_QUEUE;
       case 540:
-        return AppConfigService.appConfig.RABBIT_MQ_540P_PROCESS_VIDEO_ROUTING_KEY;
+        return AppConfigService.appConfig.BULL_540P_PROCESS_VIDEO_JOB_QUEUE;
       case 480:
-        return AppConfigService.appConfig.RABBIT_MQ_480P_PROCESS_VIDEO_ROUTING_KEY;
+        return AppConfigService.appConfig.BULL_480P_PROCESS_VIDEO_JOB_QUEUE;
       case 360:
-        return AppConfigService.appConfig.RABBIT_MQ_360P_PROCESS_VIDEO_ROUTING_KEY;
+        return AppConfigService.appConfig.BULL_360P_PROCESS_VIDEO_JOB_QUEUE;
       default:
-        return null;
+        return AppConfigService.appConfig.BULL_360P_PROCESS_VIDEO_JOB_QUEUE;
     }
   }
 
@@ -56,7 +55,7 @@ export class JobManagerService {
         file_id: file._id.toString(),
         height: file.height,
         width: file.width,
-        processRoutingKey: this.getHeightWiseRoutingKey(file.height),
+        processRoutingKey: this.getHeightWiseQueueName(file.height),
       });
     }
     return jobModels;

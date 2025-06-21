@@ -1,45 +1,50 @@
-import { Injectable } from '@nestjs/common';
-import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
-import { RabbitMqService } from '@/src/common/rabbit-mq/service/rabbitmq.service';
+import { Models, terminal, Utils, Constants } from '@toufiq-austcse/video-touch-common';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
+import * as console from 'node:console';
+import { Job } from 'bullmq';
+import * as process from 'node:process';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
-import { Constants, Models, terminal, Utils } from '@toufiq-austcse/video-touch-common';
+import { RabbitMqService } from '@/src/common/rabbit-mq/service/rabbitmq.service';
 
-
-@Injectable()
-export class ValidateVideoWorker {
+@Processor(process.env.BULL_VALIDATE_JOB_QUEUE)
+export class ValidateVideoWorker extends WorkerHost {
   constructor(private rabbitMqService: RabbitMqService) {
+    super();
   }
 
-  @RabbitSubscribe({
-    exchange: process.env.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE,
-    routingKey: process.env.RABBIT_MQ_VALIDATE_VIDEO_ROUTING_KEY,
-    queue: process.env.RABBIT_MQ_VALIDATE_VIDEO_QUEUE
-  })
-  public async handle(msg: Models.VideoValidationJobModel) {
-    console.log('VideoValidationJobHandler', msg);
+  async process(job: Job): Promise<any> {
+    console.log('VideoValidationJobHandler', job);
+    let msg: Models.VideoValidationJobModel = job.data as Models.VideoValidationJobModel;
     try {
-      let videoPath = Utils.getLocalVideoMp4Path(msg.asset_id.toString(), AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
+      let videoPath = Utils.getLocalVideoMp4Path(
+        msg.asset_id.toString(),
+        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
+      );
       let metadata = await this.getMetadata(videoPath);
       console.log('metadata', metadata);
 
-      this.rabbitMqService.publish(AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE, AppConfigService.appConfig.RABBIT_MQ_UPDATE_ASSET_ROUTING_KEY, {
-        asset_id: msg.asset_id,
-        data: {
-          size: metadata.size,
-          height: metadata.height,
-          width: metadata.width,
-          duration: metadata.duration
-        }
-      });
+      this.rabbitMqService.publish(
+        AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE,
+        AppConfigService.appConfig.RABBIT_MQ_UPDATE_ASSET_ROUTING_KEY,
+        {
+          asset_id: msg.asset_id,
+          data: {
+            size: metadata.size,
+            height: metadata.height,
+            width: metadata.width,
+            duration: metadata.duration,
+          },
+        },
+      );
 
       this.publishUpdateAssetEvent(msg.asset_id, metadata.size, metadata.height, metadata.width, metadata.duration);
 
       this.publishUpdateAssetStatusEvent(msg.asset_id, Constants.VIDEO_STATUS.VALIDATED, 'Video validated');
-
     } catch (e: any) {
       console.log('error in video validation job handler', e);
       this.publishUpdateAssetStatusEvent(msg.asset_id, Constants.VIDEO_STATUS.FAILED, e.message);
     }
+    return Promise.resolve(null);
   }
 
   async getMetadata(url: string): Promise<{
@@ -60,42 +65,61 @@ export class ValidateVideoWorker {
       size: +format.size,
       height: videoInfo.height,
       width: videoInfo.width,
-      duration: +videoInfo.duration
+      duration: +videoInfo.duration,
     };
   }
 
-  buildUpdateAssetStatusEventModel(assetId: string, status: string, details: string): Models.UpdateAssetStatusEventModel {
+  buildUpdateAssetStatusEventModel(
+    assetId: string,
+    status: string,
+    details: string,
+  ): Models.UpdateAssetStatusEventModel {
     return {
-      asset_id: assetId, details: details, status: status
+      asset_id: assetId,
+      details: details,
+      status: status,
     };
   }
 
   publishUpdateAssetStatusEvent(assetId: string, status: string, details: string) {
     try {
       let event = this.buildUpdateAssetStatusEventModel(assetId, status, details);
-      this.rabbitMqService.publish(AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE, AppConfigService.appConfig.RABBIT_MQ_UPDATE_ASSET_STATUS_ROUTING_KEY, event);
+      this.rabbitMqService.publish(
+        AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE,
+        AppConfigService.appConfig.RABBIT_MQ_UPDATE_ASSET_STATUS_ROUTING_KEY,
+        event,
+      );
     } catch (e) {
       console.log('error in publishing update asset status event', e);
     }
   }
 
-  buildUpdateAssetEventModel(assetId: string, size: number, height: number, width: number, duration: number): Models.UpdateAssetEventModel {
+  buildUpdateAssetEventModel(
+    assetId: string,
+    size: number,
+    height: number,
+    width: number,
+    duration: number,
+  ): Models.UpdateAssetEventModel {
     return {
       asset_id: assetId,
       data: {
         size,
         height,
         width,
-        duration
-      }
+        duration,
+      },
     };
   }
 
   publishUpdateAssetEvent(assetId: string, size: number, height: number, width: number, duration: number) {
     try {
       let event = this.buildUpdateAssetEventModel(assetId, size, height, width, duration);
-      this.rabbitMqService.publish(AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE, AppConfigService.appConfig.RABBIT_MQ_UPDATE_ASSET_ROUTING_KEY, event);
-
+      this.rabbitMqService.publish(
+        AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE,
+        AppConfigService.appConfig.RABBIT_MQ_UPDATE_ASSET_ROUTING_KEY,
+        event,
+      );
     } catch (e) {
       console.log('error in publishing update asset event', e);
     }

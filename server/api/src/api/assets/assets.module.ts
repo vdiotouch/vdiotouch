@@ -23,9 +23,89 @@ import { Constants, Utils } from '@toufiq-austcse/video-touch-common';
 import { AssetFilesResolver } from '@/src/api/assets/resolvers/asset-files.resolver';
 import { thumbnailByAssetLoader } from '@/src/api/assets/data-loaders/thumbnail-by-asset.loader';
 import { FilesByAssetLoader } from '@/src/api/assets/data-loaders/asset-files.loader';
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
+    BullModule.registerQueueAsync(
+      {
+        name: 'process_video_360p',
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_360P_PROCESS_VIDEO_JOB_QUEUE,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        }),
+      },
+      {
+        name: 'process_video_480p',
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_480P_PROCESS_VIDEO_JOB_QUEUE,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        }),
+      },
+      {
+        name: 'process_video_540p',
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_540P_PROCESS_VIDEO_JOB_QUEUE,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        }),
+      },
+      {
+        name: 'process_video_720p',
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_720P_PROCESS_VIDEO_JOB_QUEUE,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        }),
+      },
+      {
+        name: 'validate-video',
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_VALIDATE_JOB_QUEUE,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        }),
+      },
+      {
+        name: 'download-video',
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        }),
+      },
+      {
+        name: 'thumbnail-generation',
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_THUMBNAIL_GENERATION_JOB_QUEUE,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        }),
+      }
+    ),
     MongooseModule.forFeatureAsync([
       {
         name: ASSET_COLLECTION_NAME,

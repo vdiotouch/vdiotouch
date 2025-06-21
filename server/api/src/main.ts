@@ -11,7 +11,7 @@ async function bootstrap() {
     credentials: true,
     origin: true,
   });
-  let PORT = +process.env.PORT || 3000;
+  let PORT = +process.env.API_PORT || 3000;
   app.enableVersioning({ type: VersioningType.URI });
   await setupSwagger(app, PORT);
   app.enableCors();

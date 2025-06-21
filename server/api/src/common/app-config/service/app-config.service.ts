@@ -34,24 +34,8 @@ export class AppConfigService {
         'RABBIT_MQ_UPDATE_ASSET_STATUS_ROUTING_KEY'
       ),
       RABBIT_MQ_UPDATE_ASSET_STATUS_QUEUE: this.configService.getOrThrow('RABBIT_MQ_UPDATE_ASSET_STATUS_QUEUE'),
-      RABBIT_MQ_DOWNLOAD_VIDEO_ROUTING_KEY: this.configService.getOrThrow('RABBIT_MQ_DOWNLOAD_VIDEO_ROUTING_KEY'),
-      MAX_VIDEO_SIZE_IN_BYTES: +this.configService.get('MAX_VIDEO_SIZE_IN_BYTES', 5242880),
-      RABBIT_MQ_VALIDATE_VIDEO_ROUTING_KEY: this.configService.getOrThrow('RABBIT_MQ_VALIDATE_VIDEO_ROUTING_KEY'),
-      RABBIT_MQ_1080P_PROCESS_VIDEO_ROUTING_KEY: this.configService.getOrThrow(
-        'RABBIT_MQ_1080P_PROCESS_VIDEO_ROUTING_KEY'
-      ),
-      RABBIT_MQ_720P_PROCESS_VIDEO_ROUTING_KEY: this.configService.getOrThrow(
-        'RABBIT_MQ_720P_PROCESS_VIDEO_ROUTING_KEY'
-      ),
-      RABBIT_MQ_540P_PROCESS_VIDEO_ROUTING_KEY: this.configService.getOrThrow(
-        'RABBIT_MQ_540P_PROCESS_VIDEO_ROUTING_KEY'
-      ),
-      RABBIT_MQ_480P_PROCESS_VIDEO_ROUTING_KEY: this.configService.getOrThrow(
-        'RABBIT_MQ_480P_PROCESS_VIDEO_ROUTING_KEY'
-      ),
-      RABBIT_MQ_360P_PROCESS_VIDEO_ROUTING_KEY: this.configService.getOrThrow(
-        'RABBIT_MQ_360P_PROCESS_VIDEO_ROUTING_KEY'
-      ),
+
+      MAX_VIDEO_SIZE_IN_BYTES: this.configService.getOrThrow('MAX_VIDEO_SIZE_IN_BYTES', { infer: true }),
       AWS_ACCESS_KEY_ID: this.configService.getOrThrow('AWS_ACCESS_KEY_ID'),
       AWS_REGION: this.configService.getOrThrow('AWS_REGION'),
       AWS_SECRET_ACCESS_KEY: this.configService.getOrThrow('AWS_SECRET_ACCESS_KEY'),
@@ -72,6 +56,16 @@ export class AppConfigService {
       DEFAULT_THUMBNAIL_URL: this.configService.getOrThrow('DEFAULT_THUMBNAIL_URL'),
       JWT_EXPIRATION_TIME_IN_SEC: +this.configService.getOrThrow('JWT_EXPIRATION_TIME_IN_SEC'),
       JWT_SECRET: this.configService.getOrThrow('JWT_SECRET'),
+      BULL_VALIDATE_JOB_QUEUE: this.configService.getOrThrow('BULL_VALIDATE_JOB_QUEUE'),
+      BULL_DOWNLOAD_JOB_QUEUE: this.configService.getOrThrow('BULL_DOWNLOAD_JOB_QUEUE'),
+      BULL_UPLOAD_JOB_QUEUE: this.configService.getOrThrow('BULL_UPLOAD_JOB_QUEUE'),
+      BULL_360P_PROCESS_VIDEO_JOB_QUEUE: this.configService.getOrThrow('BULL_360P_PROCESS_VIDEO_JOB_QUEUE'),
+      BULL_480P_PROCESS_VIDEO_JOB_QUEUE: this.configService.getOrThrow('BULL_480P_PROCESS_VIDEO_JOB_QUEUE'),
+      BULL_540P_PROCESS_VIDEO_JOB_QUEUE: this.configService.getOrThrow('BULL_540P_PROCESS_VIDEO_JOB_QUEUE'),
+      BULL_720P_PROCESS_VIDEO_JOB_QUEUE: this.configService.getOrThrow('BULL_720P_PROCESS_VIDEO_JOB_QUEUE'),
+      BULL_THUMBNAIL_GENERATION_JOB_QUEUE: this.configService.getOrThrow('BULL_THUMBNAIL_GENERATION_JOB_QUEUE'),
+      REDIS_HOST: this.configService.getOrThrow('REDIS_HOST'),
+      REDIS_PORT: this.configService.getOrThrow('REDIS_PORT'),
     };
   }
 }
