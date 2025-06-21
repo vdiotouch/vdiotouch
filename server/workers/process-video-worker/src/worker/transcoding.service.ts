@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Utils, terminal } from '@toufiq-austcse/video-touch-common';
+import { Utils, terminal } from 'video-touch-common';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 
 

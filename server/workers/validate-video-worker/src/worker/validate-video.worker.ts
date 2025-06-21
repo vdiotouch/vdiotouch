@@ -1,4 +1,4 @@
-import { Models, terminal, Utils, Constants } from '@toufiq-austcse/video-touch-common';
+import { Models, terminal, Utils, Constants } from 'video-touch-common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import * as console from 'node:console';
 import { Job } from 'bullmq';

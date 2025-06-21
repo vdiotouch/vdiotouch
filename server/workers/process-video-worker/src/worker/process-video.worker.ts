@@ -1,6 +1,6 @@
 import { TranscodingService } from '@/src/worker/transcoding.service';
 import { ManifestService } from '@/src/worker/manifest.service';
-import { Constants, Models } from '@toufiq-austcse/video-touch-common';
+import { Constants, Models } from 'video-touch-common';
 import { InjectQueue, Processor, WorkerHost } from '@nestjs/bullmq';
 import * as console from 'node:console';
 import { Job, Queue } from 'bullmq';
