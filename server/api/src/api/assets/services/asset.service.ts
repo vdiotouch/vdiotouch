@@ -12,7 +12,7 @@ import { FileRepository } from '@/src/api/assets/repositories/file.repository';
 import { AssetMapper } from '@/src/api/assets/mapper/asset.mapper';
 import { JobManagerService } from '@/src/api/assets/services/job-manager.service';
 import { FileMapper } from '@/src/api/assets/mapper/file.mapper';
-import { Constants, Models, Utils } from '@toufiq-austcse/video-touch-common';
+import { Constants, Models, Utils } from 'video-touch-common';
 import { HeightWidthMap } from '@/src/api/assets/models/file.model';
 import { FileDocument } from '@/src/api/assets/schemas/files.schema';
 import { UserDocument } from '@/src/api/auth/schemas/user.schema';

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { HeightWidthMap } from '@/src/api/assets/models/file.model';
 import { FileDocument } from '@/src/api/assets/schemas/files.schema';
-import { Models } from '@toufiq-austcse/video-touch-common';
+import { Models } from 'video-touch-common';
 
 @Injectable()
 export class JobManagerService {

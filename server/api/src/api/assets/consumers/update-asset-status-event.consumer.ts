@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { AssetService } from '@/src/api/assets/services/asset.service';
-import { Models } from '@toufiq-austcse/video-touch-common';
+import { Models } from 'video-touch-common';
 
 @Injectable()
 export class UpdateAssetStatusEventConsumer {

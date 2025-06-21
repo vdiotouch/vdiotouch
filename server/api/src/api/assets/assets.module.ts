@@ -19,7 +19,7 @@ import { AppConfigService } from '@/src/common/app-config/service/app-config.ser
 import { UpdateAssetStatusEventConsumer } from '@/src/api/assets/consumers/update-asset-status-event.consumer';
 import { UpdateAssetEventConsumer } from '@/src/api/assets/consumers/update-asset-event.consumer';
 import { UpdateFileStatusEventConsumer } from '@/src/api/assets/consumers/update-file-status-event.consumer';
-import { Constants, Utils } from '@toufiq-austcse/video-touch-common';
+import { Constants, Utils } from 'video-touch-common';
 import { AssetFilesResolver } from '@/src/api/assets/resolvers/asset-files.resolver';
 import { thumbnailByAssetLoader } from '@/src/api/assets/data-loaders/thumbnail-by-asset.loader';
 import { FilesByAssetLoader } from '@/src/api/assets/data-loaders/asset-files.loader';

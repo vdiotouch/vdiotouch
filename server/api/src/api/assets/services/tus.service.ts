@@ -4,7 +4,7 @@ import { Request, Response } from 'express';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import fs from 'fs';
 import mv from 'mv';
-import { Utils } from '@toufiq-austcse/video-touch-common';
+import { Utils } from 'video-touch-common';
 
 @Injectable()
 export class TusService {
