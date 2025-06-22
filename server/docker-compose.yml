@@ -119,14 +119,13 @@ services:
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_360P_PROCESS_VIDEO_JOB_QUEUE
     volumes:
       - ./temp_videos:$TEMP_VIDEO_DIRECTORY
+    cpuset: "0"
     deploy:
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
-      resources:
-        limits:
-          cpus: "3"
+
 
   process-video-worker-480p:
     image: 578965/process-video-worker
@@ -140,14 +139,13 @@ services:
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_480P_PROCESS_VIDEO_JOB_QUEUE
     volumes:
       - ./temp_videos:$TEMP_VIDEO_DIRECTORY
+    cpuset: "1"
     deploy:
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
-      resources:
-        limits:
-          cpus: "3"
+
 
 
   process-video-worker-540p:
@@ -162,14 +160,12 @@ services:
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_540P_PROCESS_VIDEO_JOB_QUEUE
     volumes:
       - ./temp_videos:$TEMP_VIDEO_DIRECTORY
+    cpuset: "2"
     deploy:
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
-      resources:
-        limits:
-          cpus: "3"
 
 
   process-video-worker-720p:
@@ -184,14 +180,12 @@ services:
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_720P_PROCESS_VIDEO_JOB_QUEUE
     volumes:
       - ./temp_videos:$TEMP_VIDEO_DIRECTORY
+    cpuset: "3"
     deploy:
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
-      resources:
-        limits:
-          cpus: "3"
 
   upload-video-worker-360p:
     image: 578965/upload-video-worker
