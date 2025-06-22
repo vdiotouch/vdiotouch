@@ -77,3 +77,16 @@
         @apply bg-background text-foreground;
     }
 }
+
+@keyframes blink {
+    0%, 100% {
+        background-color: rgba(0, 0, 0, 0.2);  /* Black with opacity */
+    }
+    50% {
+        background-color: rgba(255, 0, 0, 0.3);  /* Reddish color */
+    }
+}
+
+.blink {
+    animation: blink 1.5s infinite;
+}
