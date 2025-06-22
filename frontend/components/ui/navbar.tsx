@@ -39,13 +39,20 @@ const Navbar = () => {
             {/*</button>*/}
           </div>
           <div className="flex flex-1 items-center justify-center sm:items-stretch sm:justify-start">
-            <Link className="flex flex-shrink-0 gap-2" href="/">
-              <img
-                className="h-8 w-auto"
-                src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=500&width=500"
-                alt="Your Company"
-              />
-              <h1 className="text-white text-2xl">Video Touch</h1>
+            <Link className="flex flex-shrink-0 items-center gap-2" href="/">
+              <svg 
+                className="h-8 w-auto text-indigo-500" 
+                viewBox="0 0 24 24" 
+                fill="currentColor" 
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M4 8H2V4C2 3.46957 2.21071 2.96086 2.58579 2.58579C2.96086 2.21071 3.46957 2 4 2H8V4H4V8Z" />
+                <path d="M20 8H22V4C22 3.46957 21.7893 2.96086 21.4142 2.58579C21.0391 2.21071 20.5304 2 20 2H16V4H20V8Z" />
+                <path d="M20 20H16V22H20C20.5304 22 21.0391 21.7893 21.4142 21.4142C21.7893 21.0391 22 20.5304 22 20V16H20V20Z" />
+                <path d="M4 20H8V22H4C3.46957 22 2.96086 21.7893 2.58579 21.4142C2.21071 21.0391 2 20.5304 2 20V16H4V20Z" />
+                <path d="M9 7L15 12L9 17V7Z" />
+              </svg>
+              <h1 className="text-white text-2xl font-bold">Video Touch</h1>
             </Link>
             {/*<div className="hidden sm:ml-6 sm:block">*/}
             {/*  <div className="flex space-x-4">*/}
