@@ -14,6 +14,17 @@ export interface VideoDetails {
   thumbnail_url: string;
   latest_status: string;
   master_playlist_url: string;
+  files: FileDetails[];
+}
+
+export interface FileDetails {
+  _id: string;
+  name: string;
+  size: number;
+  latest_status: string;
+  height: number;
+  width: number;
+  type: string;
 }
 
 export interface StatusLog {

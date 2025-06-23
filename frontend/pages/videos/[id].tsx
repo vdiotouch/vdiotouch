@@ -13,6 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import dynamic from "next/dynamic";
 import VideoTitleComponent from "@/components/ui/video-title-component";
+import VideoResolutionsComponent from "@/components/ui/video-resolutions-component";
 import { NextPage } from "next";
 import PrivateRoute from "@/components/private-route";
 
@@ -104,6 +105,8 @@ const VideoDetailsPage: NextPage = () => {
               <VideoDetailsComponent videoDetails={videoDetails} />
             </CardContent>
           </Card>
+
+          <VideoResolutionsComponent videoDetails={videoDetails} />
         </div>
 
         {/* Sidebar - Metadata and Status */}
