@@ -17,6 +17,13 @@ import { NextPage } from "next";
 import { useAuthContext } from "@/contexts/useAuthContext";
 import PublicRoute from "@/components/public-route";
 import ErrorAlert from "@/components/ui/error-alert";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const formSchema = z.object({
   email: z
@@ -53,63 +60,78 @@ const Login: NextPage = () => {
   };
   return (
     <div className="flex m-5">
-      <div className="m-auto h-1/4 w-1/4">
-        {error && <ErrorAlert error={error} />}
-        <h1 className="text-4xl flex justify-center">Login</h1>
-        <p className="flex justify-center">
-          {`Don't have an account yet?`}
-          <Link
-            href={"signup"}
-            className="mx-1 underline text-blue-600 hover:text-blue-800 visited:text-purple-600"
-          >
-            Signup
-          </Link>
-        </p>
-        <Form {...form}>
-          <form id="login-form" onSubmit={form.handleSubmit(onFormSubmit)}>
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input placeholder="demo@gmail.com" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+      <div className="m-auto h-1/3 w-1/3 flex-col">
+        <div className="m-2">{error && <ErrorAlert error={error} />}</div>
 
-            <FormField
-              control={form.control}
-              name="password"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Password</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="**********"
-                      type="password"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <div className="flex flex-row-reverse">
-              <Button
-                disabled={loading}
-                type="submit"
-                size="sm"
-                className="my-2"
+        <Card className="shadow-lg m-2">
+          <CardHeader>
+            <CardTitle className="text-center">Sign in</CardTitle>
+            <CardDescription className="text-center">
+              {`Don't have an account yet? `}
+              <Link
+                href={"signup"}
+                className="font-medium text-indigo-600 hover:text-indigo-500"
               >
-                Login
-              </Button>
-            </div>
-          </form>
-        </Form>
+                Sign up
+              </Link>
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Form {...form}>
+              <form
+                id="login-form"
+                onSubmit={form.handleSubmit(onFormSubmit)}
+                className="space-y-4"
+              >
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="demo@gmail.com"
+                          {...field}
+                          className="w-full"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="**********"
+                          type="password"
+                          {...field}
+                          className="w-full"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="pt-2">
+                  <Button
+                    disabled={loading}
+                    type="submit"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700"
+                  >
+                    {loading ? "Signing in..." : "Sign in"}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
