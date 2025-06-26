@@ -13,6 +13,13 @@ import { AppConfigService } from '@/src/common/app-config/service/app-config.ser
         return {
           uri: AppConfigService.appConfig.RABBIT_MQ_URL,
           connectionInitOptions: { wait: true },
+          exchanges: [
+            {
+              name: AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE,
+              type: 'topic',
+              createExchangeIfNotExists: true,
+            },
+          ],
         };
       },
     }),
