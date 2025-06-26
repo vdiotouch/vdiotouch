@@ -48,7 +48,6 @@ export interface EnvironmentVariables {
 
   CDN_BASE_URL: string;
 
-  RABBIT_MQ_THUMBNAIL_GENERATION_ROUTING_KEY: string;
   DEFAULT_THUMBNAIL_URL: string;
   JWT_EXPIRATION_TIME_IN_SEC: number;
   JWT_SECRET: string;
