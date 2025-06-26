@@ -1,44 +1,57 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
+import { Logger } from '@nestjs/common';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
-import { Constants, Models, terminal, Utils } from '@toufiq-austcse/video-touch-common';
+import { Constants, Models, terminal, Utils } from 'video-touch-common';
 import { S3ClientService } from '@/src/common/aws/s3/s3-client.service';
 import { RabbitMqService } from '@/src/common/rabbit-mq/service/rabbitmq.service';
+import { Job } from 'bullmq';
+import { Processor, WorkerHost } from '@nestjs/bullmq';
 
-
-@Injectable()
-export class ThumbnailGenerationWorker {
-  constructor(private s3ClientService: S3ClientService, private rabbitMqService: RabbitMqService) {
+@Processor(process.env.BULL_THUMBNAIL_GENERATION_JOB_QUEUE)
+export class ThumbnailGenerationWorker extends WorkerHost {
+  constructor(
+    private s3ClientService: S3ClientService,
+    private rabbitMqService: RabbitMqService,
+  ) {
+    super();
   }
 
-  @RabbitSubscribe({
-    exchange: process.env.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE,
-    routingKey: process.env.RABBIT_MQ_THUMBNAIL_GENERATION_ROUTING_KEY,
-    queue: process.env.RABBIT_MQ_THUMBNAIL_GENERATION_QUEUE
-  })
+  process(job: Job): Promise<any> {
+    let msg: Models.ThumbnailGenerationJobModel = job.data;
+    console.log('ThumbnailGenerationWorker process', msg);
+    return this.handle(msg);
+  }
+
   public async handle(msg: Models.ThumbnailGenerationJobModel) {
     console.log('ThumbnailGenerationJobHandler', msg);
     try {
       this.publishUpdateFileStatusEvent(msg.file_id, 0, Constants.FILE_STATUS.PROCESSING, 'Processing started');
-      let videoPath = Utils.getLocalVideoMp4Path(msg.asset_id.toString(), AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
-      let thumbnailOutputPath = Utils.getLocalThumbnailPath(msg.asset_id.toString(), AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
+      let videoPath = Utils.getLocalVideoMp4Path(
+        msg.asset_id.toString(),
+        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
+      );
+      let thumbnailOutputPath = Utils.getLocalThumbnailPath(
+        msg.asset_id.toString(),
+        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
+      );
 
       await this.generateThumbnnail(videoPath, thumbnailOutputPath);
       let metadata = await this.getMetadata(thumbnailOutputPath);
       Logger.debug(metadata, 'Thumbnail metadata');
 
-      let uploadRes = await this.s3ClientService.uploadObject({
-        bucket: AppConfigService.appConfig.AWS_S3_BUCKET_NAME,
-        key: Utils.getS3ThumbnailPath(msg.asset_id.toString()),
-        filePath: thumbnailOutputPath,
-        contentType: 'image/png'
-      }, true);
+      let uploadRes = await this.s3ClientService.uploadObject(
+        {
+          bucket: AppConfigService.appConfig.AWS_S3_BUCKET_NAME,
+          key: Utils.getS3ThumbnailPath(msg.asset_id.toString()),
+          filePath: thumbnailOutputPath,
+          contentType: 'image/png',
+        },
+        true,
+      );
 
       Logger.debug(uploadRes, 'Thumbnail upload response');
 
       this.publishUpdateFileStatusEvent(msg.file_id, metadata.size, Constants.FILE_STATUS.READY, 'Thumbnail generated');
       console.log('event published');
-
     } catch (e: any) {
       console.log('error in thumbnail generation job handler', e);
       this.publishUpdateFileStatusEvent(msg.file_id, 0, Constants.FILE_STATUS.FAILED, e.message);
@@ -52,9 +65,15 @@ export class ThumbnailGenerationWorker {
     return thumbnailOutPutPath;
   }
 
-  buildUpdateAssetStatusEventModel(assetId: string, status: string, details: string): Models.UpdateAssetStatusEventModel {
+  buildUpdateAssetStatusEventModel(
+    assetId: string,
+    status: string,
+    details: string,
+  ): Models.UpdateAssetStatusEventModel {
     return {
-      asset_id: assetId, details: details, status: status
+      asset_id: assetId,
+      details: details,
+      status: status,
     };
   }
 
@@ -76,7 +95,7 @@ export class ThumbnailGenerationWorker {
       size: +format.size,
       height: videoInfo.height,
       width: videoInfo.width,
-      duration: +videoInfo.duration
+      duration: +videoInfo.duration,
     };
   }
 
@@ -89,15 +108,26 @@ export class ThumbnailGenerationWorker {
   //   }
   // }
   //
-  buildUpdateFileStatusEventModel(fileId: string, details: string, dirSize: number, status: string): Models.UpdateFileStatusEventModel {
+  buildUpdateFileStatusEventModel(
+    fileId: string,
+    details: string,
+    dirSize: number,
+    status: string,
+  ): Models.UpdateFileStatusEventModel {
     return {
-      file_id: fileId, details: details, dir_size: dirSize, status: status
+      file_id: fileId,
+      details: details,
+      dir_size: dirSize,
+      status: status,
     };
   }
 
   private publishUpdateFileStatusEvent(fileId: string, size: number, status: string, detail: string) {
     let event = this.buildUpdateFileStatusEventModel(fileId, detail, size, status);
-    this.rabbitMqService.publish(AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE, AppConfigService.appConfig.RABBIT_MQ_UPDATE_FILE_STATUS_ROUTING_KEY, event);
-
+    this.rabbitMqService.publish(
+      AppConfigService.appConfig.RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE,
+      AppConfigService.appConfig.RABBIT_MQ_UPDATE_FILE_STATUS_ROUTING_KEY,
+      event,
+    );
   }
 }
