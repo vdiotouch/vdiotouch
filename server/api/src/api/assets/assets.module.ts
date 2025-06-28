@@ -24,9 +24,12 @@ import { AssetFilesResolver } from '@/src/api/assets/resolvers/asset-files.resol
 import { thumbnailByAssetLoader } from '@/src/api/assets/data-loaders/thumbnail-by-asset.loader';
 import { FilesByAssetLoader } from '@/src/api/assets/data-loaders/asset-files.loader';
 import { BullModule } from '@nestjs/bullmq';
+import { AssetController } from '@/src/api/assets/controllers/asset.controller';
+import { AuthModule } from '@/src/api/auth/auth.module';
 
 @Module({
   imports: [
+    AuthModule,
     BullModule.registerQueueAsync(
       {
         name: 'process_video_360p',
@@ -182,7 +185,7 @@ import { BullModule } from '@nestjs/bullmq';
       }),
     }),
   ],
-  controllers: [UploadController],
+  controllers: [UploadController, AssetController],
   providers: [
     AssetRepository,
     FileRepository,
