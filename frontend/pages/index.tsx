@@ -78,7 +78,11 @@ export const columns: ColumnDef<Video>[] = [
               width: "100px",
             }}
           />
-          <div className="lowercase font-medium">{row.getValue("title")}</div>
+          <div
+            className="lowercase font-medium w-32 truncate"
+          >
+            {row.getValue("title")}
+          </div>
         </Link>
       );
     },
