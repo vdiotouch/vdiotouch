@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Constants } from 'video-touch-common';
+import { Constants, Utils } from 'video-touch-common';
 import { FileRepository } from '@/src/api/assets/repositories/file.repository';
 import mongoose from 'mongoose';
 import { FileDocument } from '@/src/api/assets/schemas/files.schema';
 import { AssetService } from '@/src/api/assets/services/asset.service';
 import { AssetDocument } from '@/src/api/assets/schemas/assets.schema';
+import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
+import fs from 'fs';
 
 @Injectable()
 export class FileService {
@@ -75,6 +77,12 @@ export class FileService {
     if (updatedFile.latest_status === Constants.FILE_STATUS.FAILED) {
       await this.assetService.checkForAssetFailedStatus(assetId.toString());
     }
+    if (
+      updatedFile.latest_status === Constants.FILE_STATUS.READY ||
+      updatedFile.latest_status === Constants.FILE_STATUS.FAILED
+    ) {
+      this.removeLocalFile(updatedFile.asset_id.toString(), updatedFile._id.toString());
+    }
   }
 
   async listThumbnailFiles(items: AssetDocument[]): Promise<FileDocument[]> {
@@ -92,5 +100,18 @@ export class FileService {
       latest_status: Constants.FILE_STATUS.READY,
       type: Constants.FILE_TYPE.THUMBNAIL,
     });
+  }
+
+  private removeLocalFile(assetId: string, fileId: string) {
+    console.log('deleting local  file ', fileId);
+    let localPath = `${Utils.getLocalVideoRootPath(
+      assetId,
+      AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY
+    )}/${fileId}`;
+    console.log('local path ', localPath);
+    if (fs.existsSync(localPath)) {
+      fs.rmSync(localPath, { recursive: true, force: true });
+      console.log('local file deleted successfully');
+    }
   }
 }
