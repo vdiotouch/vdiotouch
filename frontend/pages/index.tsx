@@ -79,9 +79,10 @@ export const columns: ColumnDef<Video>[] = [
             }}
           />
           <div
-            className="lowercase font-medium w-32 truncate"
+            className="lowercase font-medium w-48 truncate"
+            title={decodeURIComponent(row.getValue("title"))}
           >
-            {row.getValue("title")}
+            {decodeURIComponent(row.getValue("title"))}
           </div>
         </Link>
       );
