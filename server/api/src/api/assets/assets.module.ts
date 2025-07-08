@@ -26,6 +26,8 @@ import { FilesByAssetLoader } from '@/src/api/assets/data-loaders/asset-files.lo
 import { BullModule } from '@nestjs/bullmq';
 import { AssetController } from '@/src/api/assets/controllers/asset.controller';
 import { AuthModule } from '@/src/api/auth/auth.module';
+import { BullBoardModule } from '@bull-board/nestjs';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 
 @Module({
   imports: [
@@ -109,6 +111,34 @@ import { AuthModule } from '@/src/api/auth/auth.module';
         }),
       }
     ),
+    BullBoardModule.forFeature({
+      name: 'process_video_360p',
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'process_video_480p',
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'process_video_540p',
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'process_video_720p',
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'validate-video',
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'download-video',
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'thumbnail-generation',
+      adapter: BullMQAdapter,
+    }),
     MongooseModule.forFeatureAsync([
       {
         name: ASSET_COLLECTION_NAME,
