@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
-import { Constants } from 'video-touch-common';
+import { Constants, Utils } from 'video-touch-common';
 import { FileRepository } from '@/src/api/assets/repositories/file.repository';
 import mongoose from 'mongoose';
 import { FileDocument } from '@/src/api/assets/schemas/files.schema';
 import { AssetService } from '@/src/api/assets/services/asset.service';
 import { AssetDocument } from '@/src/api/assets/schemas/assets.schema';
+import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
+import fs from 'fs';
 
 @Injectable()
 export class FileService {
@@ -44,6 +46,13 @@ export class FileService {
       return;
     }
     let assetId = updatedFile.asset_id;
+    if (
+      updatedFile.latest_status === Constants.FILE_STATUS.READY ||
+      updatedFile.latest_status === Constants.FILE_STATUS.FAILED
+    ) {
+      console.log('file status is ready or failed, deleting local file');
+      this.deleteLocalFile(assetId.toString(), updatedFile.height.toString());
+    }
 
     if (updatedFile.latest_status == Constants.FILE_STATUS.READY) {
       this.assetService
@@ -73,7 +82,12 @@ export class FileService {
         });
     }
     if (updatedFile.latest_status === Constants.FILE_STATUS.FAILED) {
-      await this.assetService.checkForAssetFailedStatus(assetId.toString());
+      this.assetService
+        .checkForAssetFailedStatus(assetId.toString())
+        .then()
+        .catch((err) => {
+          console.log('error while checking asset failed status', err);
+        });
     }
   }
 
@@ -92,5 +106,17 @@ export class FileService {
       latest_status: Constants.FILE_STATUS.READY,
       type: Constants.FILE_TYPE.THUMBNAIL,
     });
+  }
+
+  deleteLocalFile(assetId: string, resolution: string) {
+    console.log('delete local file called ', assetId, ' resolution ', resolution);
+    let localPath = `${Utils.getLocalVideoRootPath(
+      assetId,
+      AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY
+    )}/${resolution}`;
+    console.log('local path ', localPath);
+    if (fs.existsSync(localPath)) {
+      fs.rmSync(localPath, { recursive: true, force: true });
+    }
   }
 }
