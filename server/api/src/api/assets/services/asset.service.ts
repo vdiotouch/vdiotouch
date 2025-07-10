@@ -209,11 +209,15 @@ export class AssetService {
   }
 
   async getTotalAvailableLocalStorageSizeInBytes(): Promise<number> {
-    const tempVideoDirectory = AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY;
+    let tempVideoDirectory = AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY;
+
     if (!fs.existsSync(tempVideoDirectory)) {
       return 0;
     }
-
+    // Remove initial slash if it exists
+    if (tempVideoDirectory.startsWith('/')) {
+      tempVideoDirectory = tempVideoDirectory.substring(1);
+    }
     try {
       // Execute df command to get disk space information
       // -k: display in 1K blocks
@@ -236,7 +240,7 @@ export class AssetService {
   }
 
   async afterSave(doc: AssetDocument) {
-    await this.cleanUpService.cleanupDevice();
+    // await this.cleanUpService.cleanupDevice();
     let isStorageAvailable = await this.isStorageAvailable(
       AppConfigService.appConfig.MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES
     );
