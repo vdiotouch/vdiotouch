@@ -7,10 +7,7 @@ import * as process from 'node:process';
 import * as console from 'node:console';
 import { Job } from 'bullmq';
 
-@Processor(process.env.BULL_UPLOAD_JOB_QUEUE, {
-  skipLockRenewal: true,
-  skipStalledCheck: true,
-})
+@Processor(process.env.BULL_UPLOAD_JOB_QUEUE)
 export class VideoUploaderJobHandler extends WorkerHost {
   constructor(
     private s3ClientService: S3ClientService,

@@ -6,10 +6,7 @@ import {RabbitMqService} from '@/src/common/rabbit-mq/service/rabbitmq.service';
 import {Job} from 'bullmq';
 import {Processor, WorkerHost} from '@nestjs/bullmq';
 
-@Processor(process.env.BULL_THUMBNAIL_GENERATION_JOB_QUEUE, {
-    skipLockRenewal: true,
-    skipStalledCheck: true,
-})
+@Processor(process.env.BULL_THUMBNAIL_GENERATION_JOB_QUEUE)
 export class ThumbnailGenerationWorker extends WorkerHost {
     constructor(
         private s3ClientService: S3ClientService,

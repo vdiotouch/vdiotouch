@@ -6,10 +6,7 @@ import * as process from 'node:process';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { RabbitMqService } from '@/src/common/rabbit-mq/service/rabbitmq.service';
 
-@Processor(process.env.BULL_VALIDATE_JOB_QUEUE, {
-  skipLockRenewal: true,
-  skipStalledCheck: true,
-})
+@Processor(process.env.BULL_VALIDATE_JOB_QUEUE)
 export class ValidateVideoWorker extends WorkerHost {
   constructor(private rabbitMqService: RabbitMqService) {
     super();
