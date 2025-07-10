@@ -8,7 +8,10 @@ import { OnModuleInit } from '@nestjs/common';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { RabbitMqService } from '@/src/common/rabbit-mq/service/rabbitmq.service';
 
-@Processor(process.env.BULL_DOWNLOAD_JOB_QUEUE)
+@Processor(process.env.BULL_DOWNLOAD_JOB_QUEUE, {
+  skipLockRenewal: true,
+  skipStalledCheck: true,
+})
 export class DownloadVideoJobHandler extends WorkerHost implements OnModuleInit {
   constructor(
     private downloadHttpService: DownloaderHttpService,
