@@ -42,7 +42,7 @@ export type Video = {
   created_at: Date;
 };
 
-export const columns: ColumnDef<Video>[] = [
+export const createColumns = (refetch: () => void): ColumnDef<Video>[] => [
   {
     id: "select",
     header: ({ table }) => (
@@ -156,7 +156,8 @@ export const columns: ColumnDef<Video>[] = [
               await recreateAsset({
                 variables: { id }, // Add proper variables
               });
-              // Optionally refetch data or show success message
+              // Refetch data to update the list
+              refetch();
             } catch (error) {
               alert("Error re-processing video: ");
               console.error("Error re-processing video:", error);
@@ -256,7 +257,7 @@ const HomePage: NextPage = () => {
         <AppTable<Video>
           totalPageCount={data.ListAsset.page_info.total_pages}
           data={data.ListAsset.assets}
-          columns={columns}
+          columns={createColumns(refetch)}
           pageIndex={pageIndex}
           pageSize={pageSize}
           next={nextFunction}
