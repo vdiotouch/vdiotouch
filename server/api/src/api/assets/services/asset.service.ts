@@ -231,6 +231,7 @@ export class AssetService {
 
   isStorageAvailable(requiredSizeInBytes: number): boolean {
     const availableSize = this.getTotalAvailableLocalStorageSizeInBytes();
+    console.log('availableSize', availableSize, 'requiredSizeInBytes', requiredSizeInBytes);
     return availableSize >= requiredSizeInBytes;
   }
 
