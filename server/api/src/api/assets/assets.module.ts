@@ -8,6 +8,7 @@ import { AssetMapper } from '@/src/api/assets/mapper/asset.mapper';
 import { ModuleRef } from '@nestjs/core';
 import { VideoDownloadService } from '@/src/api/assets/services/video-download.service';
 import { JobManagerService } from '@/src/api/assets/services/job-manager.service';
+import { CleanupService } from '@/src/api/assets/services/cleanup.service';
 import { FILE_COLLECTION_NAME, FileSchema } from '@/src/api/assets/schemas/files.schema';
 import { StatusMapper } from '@/src/api/assets/mapper/status.mapper';
 import { FileRepository } from '@/src/api/assets/repositories/file.repository';
@@ -232,6 +233,7 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
     TusService,
     thumbnailByAssetLoader,
     FilesByAssetLoader,
+    CleanupService,
   ],
 })
 export class AssetsModule {}

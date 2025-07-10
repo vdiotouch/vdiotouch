@@ -8,6 +8,7 @@ import { UpdateAssetInputDto } from '@/src/api/assets/dtos/update-asset-input.dt
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import mongoose from 'mongoose';
 import fs from 'fs';
+import { execSync } from 'child_process';
 import { FileRepository } from '@/src/api/assets/repositories/file.repository';
 import { AssetMapper } from '@/src/api/assets/mapper/asset.mapper';
 import { JobManagerService } from '@/src/api/assets/services/job-manager.service';
@@ -18,6 +19,7 @@ import { FileDocument } from '@/src/api/assets/schemas/files.schema';
 import { UserDocument } from '@/src/api/auth/schemas/user.schema';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
+import { CleanupService } from '@/src/api/assets/services/cleanup.service';
 
 @Injectable()
 export class AssetService {
@@ -31,7 +33,8 @@ export class AssetService {
     @InjectQueue('process_video_720p') private videoProcessQueue720p: Queue,
     @InjectQueue('validate-video') private validateVideoQueue: Queue,
     @InjectQueue('thumbnail-generation') private thumbnailGenerationQueue: Queue,
-    @InjectQueue('download-video') private downloadVideoQueue: Queue
+    @InjectQueue('download-video') private downloadVideoQueue: Queue,
+    private cleanUpService: CleanupService
   ) {}
 
   async create(createVideoInput: CreateAssetInputDto, userDocument: UserDocument) {
@@ -109,7 +112,7 @@ export class AssetService {
       'Downloading assets'
     );
     let downloadVideoJob = this.buildDownloadVideoJob(videoDocument);
-    console.log('pubsh download video job to ', AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE);
+    console.log('push download video job to ', AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE);
     return this.downloadVideoQueue.add(AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE, downloadVideoJob, {
       jobId: videoDocument._id.toString(),
       removeOnComplete: true,
@@ -135,15 +138,6 @@ export class AssetService {
     };
   }
 
-  deleteLocalAssetFile(_id: string) {
-    console.log('deleting local asset file ', _id);
-    let localPath = Utils.getLocalVideoRootPath(_id, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
-    console.log('local path ', localPath);
-    if (fs.existsSync(localPath)) {
-      fs.rmSync(localPath, { recursive: true, force: true });
-    }
-  }
-
   async checkForDeleteLocalAssetFile(assetId: string) {
     console.log('checking for ', assetId);
     let files = await this.fileRepository.find({
@@ -153,7 +147,7 @@ export class AssetService {
 
     console.log('length ', files.length, filesWithReadyStatus.length);
     if (files.length === filesWithReadyStatus.length) {
-      this.deleteLocalAssetFile(assetId);
+      this.cleanUpService.deleteLocalAssetFile(assetId);
     }
   }
 
@@ -190,7 +184,7 @@ export class AssetService {
     });
 
     if (updatedAsset.latest_status === Constants.VIDEO_STATUS.FAILED) {
-      this.deleteLocalAssetFile(updatedAsset._id.toString());
+      this.cleanUpService.deleteLocalAssetFile(updatedAsset._id.toString());
     }
     if (
       updatedAsset.latest_status === Constants.VIDEO_STATUS.DOWNLOADED ||
@@ -215,7 +209,37 @@ export class AssetService {
     }
   }
 
+  getTotalAvailableLocalStorageSizeInBytes(): number {
+    const tempVideoDirectory = AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY;
+    if (!fs.existsSync(tempVideoDirectory)) {
+      return 0;
+    }
+
+    try {
+      // Execute df command to get disk space information
+      // -k: display in 1K blocks
+      // --output=avail: only show available space
+      const output = execSync(`df -k --output=avail "${tempVideoDirectory}" | tail -1`).toString().trim();
+
+      // Convert KB to bytes (multiply by 1024)
+      return parseInt(output, 10) * 1024;
+    } catch (error) {
+      console.error('Error getting available disk space:', error);
+      return 0;
+    }
+  }
+
+  isStorageAvailable(requiredSizeInBytes: number): boolean {
+    const availableSize = this.getTotalAvailableLocalStorageSizeInBytes();
+    return availableSize >= requiredSizeInBytes;
+  }
+
   async afterSave(doc: AssetDocument) {
+    await this.cleanUpService.cleanupDevice();
+    if (!this.isStorageAvailable(AppConfigService.appConfig.MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES)) {
+      await this.updateAssetStatus(doc._id.toString(), Constants.VIDEO_STATUS.ON_HOLD, 'Not enough storage');
+      return;
+    }
     if (doc.source_url) {
       this.pushDownloadVideoJob(doc)
         .then(() => {
