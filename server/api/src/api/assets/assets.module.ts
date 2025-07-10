@@ -202,6 +202,11 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 
             return;
           });
+          schema.post('save', async function (doc) {
+            let fileService: FileService = moduleRef.get<FileService>(FileService, { strict: false });
+            console.log('file post save hook');
+            await fileService.afterSave(doc);
+          });
 
           return schema;
         },
