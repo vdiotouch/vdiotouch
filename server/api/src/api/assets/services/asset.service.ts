@@ -8,12 +8,11 @@ import { UpdateAssetInputDto } from '@/src/api/assets/dtos/update-asset-input.dt
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import mongoose from 'mongoose';
 import fs from 'fs';
-import { execSync } from 'child_process';
 import { FileRepository } from '@/src/api/assets/repositories/file.repository';
 import { AssetMapper } from '@/src/api/assets/mapper/asset.mapper';
 import { JobManagerService } from '@/src/api/assets/services/job-manager.service';
 import { FileMapper } from '@/src/api/assets/mapper/file.mapper';
-import { Constants, Models, Utils } from 'video-touch-common';
+import { Constants, Models, terminal, Utils } from 'video-touch-common';
 import { HeightWidthMap } from '@/src/api/assets/models/file.model';
 import { FileDocument } from '@/src/api/assets/schemas/files.schema';
 import { UserDocument } from '@/src/api/auth/schemas/user.schema';
@@ -209,7 +208,7 @@ export class AssetService {
     }
   }
 
-  getTotalAvailableLocalStorageSizeInBytes(): number {
+  async getTotalAvailableLocalStorageSizeInBytes(): Promise<number> {
     const tempVideoDirectory = AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY;
     if (!fs.existsSync(tempVideoDirectory)) {
       return 0;
@@ -219,7 +218,8 @@ export class AssetService {
       // Execute df command to get disk space information
       // -k: display in 1K blocks
       // --output=avail: only show available space
-      const output = execSync(`df -k --output=avail "${tempVideoDirectory}" | tail -1`).toString().trim();
+      let command = `df -k --output=avail "${tempVideoDirectory}" | tail -1"`;
+      let output = await terminal(command);
 
       // Convert KB to bytes (multiply by 1024)
       return parseInt(output, 10) * 1024;
@@ -229,15 +229,18 @@ export class AssetService {
     }
   }
 
-  isStorageAvailable(requiredSizeInBytes: number): boolean {
-    const availableSize = this.getTotalAvailableLocalStorageSizeInBytes();
+  async isStorageAvailable(requiredSizeInBytes: number): Promise<boolean> {
+    const availableSize = await this.getTotalAvailableLocalStorageSizeInBytes();
     console.log('availableSize', availableSize, 'requiredSizeInBytes', requiredSizeInBytes);
     return availableSize >= requiredSizeInBytes;
   }
 
   async afterSave(doc: AssetDocument) {
     await this.cleanUpService.cleanupDevice();
-    if (!this.isStorageAvailable(AppConfigService.appConfig.MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES)) {
+    let isStorageAvailable = await this.isStorageAvailable(
+      AppConfigService.appConfig.MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES
+    );
+    if (!isStorageAvailable) {
       await this.updateAssetStatus(doc._id.toString(), Constants.VIDEO_STATUS.ON_HOLD, 'Not enough storage');
       return;
     }
