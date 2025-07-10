@@ -218,7 +218,7 @@ export class AssetService {
       // Execute df command to get disk space information
       // -k: display in 1K blocks
       // --output=avail: only show available space
-      let command = `df -k --output=avail "${tempVideoDirectory}" | tail -1"`;
+      let command = `df -k --output=avail "${tempVideoDirectory}" | tail -1`;
       let output = await terminal(command);
 
       // Convert KB to bytes (multiply by 1024)
