@@ -7,12 +7,11 @@ import { GetAssetInputDto } from '@/src/api/assets/dtos/get-asset-input.dto';
 import { UpdateAssetInputDto } from '@/src/api/assets/dtos/update-asset-input.dto';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import mongoose from 'mongoose';
-import fs from 'fs';
 import { FileRepository } from '@/src/api/assets/repositories/file.repository';
 import { AssetMapper } from '@/src/api/assets/mapper/asset.mapper';
 import { JobManagerService } from '@/src/api/assets/services/job-manager.service';
 import { FileMapper } from '@/src/api/assets/mapper/file.mapper';
-import { Constants, Models, terminal, Utils } from 'video-touch-common';
+import { Constants, Models, Utils } from 'video-touch-common';
 import { HeightWidthMap } from '@/src/api/assets/models/file.model';
 import { FileDocument } from '@/src/api/assets/schemas/files.schema';
 import { UserDocument } from '@/src/api/auth/schemas/user.schema';
@@ -208,55 +207,20 @@ export class AssetService {
     }
   }
 
-  async getTotalAvailableLocalStorageSizeInBytes(): Promise<number> {
-    let tempVideoDirectory = AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY;
-
-    if (!fs.existsSync(tempVideoDirectory)) {
-      return 0;
-    }
-    // Remove initial slash if it exists
-    if (tempVideoDirectory.startsWith('/')) {
-      tempVideoDirectory = tempVideoDirectory.substring(1);
-    }
-    try {
-      // Execute df command to get disk space information
-      // -k: display in 1K blocks
-      // --output=avail: only show available space
-      let command = `df -k --output=avail "${tempVideoDirectory}" | tail -1`;
-      let output = await terminal(command);
-
-      // Convert KB to bytes (multiply by 1024)
-      return parseInt(output, 10) * 1024;
-    } catch (error) {
-      console.error('Error getting available disk space:', error);
-      return 0;
-    }
-  }
-
-  async isStorageAvailable(requiredSizeInBytes: number): Promise<boolean> {
-    const availableSize = await this.getTotalAvailableLocalStorageSizeInBytes();
-    console.log('availableSize', availableSize, 'requiredSizeInBytes', requiredSizeInBytes);
-    return availableSize >= requiredSizeInBytes;
-  }
-
   async afterSave(doc: AssetDocument) {
-    // await this.cleanUpService.cleanupDevice();
-    let isStorageAvailable = await this.isStorageAvailable(
-      AppConfigService.appConfig.MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES
-    );
-    if (!isStorageAvailable) {
-      await this.updateAssetStatus(doc._id.toString(), Constants.VIDEO_STATUS.ON_HOLD, 'Not enough storage');
+    if (!doc.source_url) {
+      console.log('source_url is not present, skipping download assets job');
+      await this.updateAssetStatus(doc._id.toString(), Constants.VIDEO_STATUS.FAILED, 'source_url not present');
       return;
     }
-    if (doc.source_url) {
-      this.pushDownloadVideoJob(doc)
-        .then(() => {
-          console.log('pushed download assets job');
-        })
-        .catch((err) => {
-          console.log('error pushing download assets job', err);
-        });
-    }
+
+    this.pushDownloadVideoJob(doc)
+      .then(() => {
+        console.log('pushed download assets job');
+      })
+      .catch((err) => {
+        console.log('error pushing download assets job', err);
+      });
   }
 
   async publishVideoProcessingJob(assetId: string, jobMetadata: Models.JobMetadataModel[]) {
