@@ -213,14 +213,13 @@ export class AssetService {
       await this.updateAssetStatus(doc._id.toString(), Constants.VIDEO_STATUS.FAILED, 'source_url not present');
       return;
     }
-
-    this.pushDownloadVideoJob(doc)
-      .then(() => {
-        console.log('pushed download assets job');
-      })
-      .catch((err) => {
-        console.log('error pushing download assets job', err);
-      });
+    try {
+      await this.pushDownloadVideoJob(doc);
+      console.log('pushed download assets job');
+    } catch (err) {
+      console.log('error pushing download assets job', err);
+      await this.updateAssetStatus(doc._id.toString(), Constants.VIDEO_STATUS.FAILED, err.toString());
+    }
   }
 
   async publishVideoProcessingJob(assetId: string, jobMetadata: Models.JobMetadataModel[]) {
