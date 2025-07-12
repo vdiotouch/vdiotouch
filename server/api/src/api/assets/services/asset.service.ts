@@ -200,9 +200,15 @@ export class AssetService {
     if (updatedAsset.latest_status === Constants.VIDEO_STATUS.VALIDATED) {
       let heightWidthMapByHeight = this.jobManagerService.getAllHeightWidthMapByHeight(updatedAsset.height);
       let files = await this.insertFilesData(updatedAsset._id.toString(), heightWidthMapByHeight);
+      await this.insertSourceFile(
+        updatedAsset._id.toString(),
+        updatedAsset.height,
+        updatedAsset.width,
+        updatedAsset.size
+      );
       let jobModels = this.jobManagerService.getJobData(updatedAsset._id.toString(), files);
       await this.updateAssetStatus(updatedAsset._id.toString(), Constants.VIDEO_STATUS.PROCESSING, 'Video processing');
-      this.publishVideoProcessingJob(updatedAsset._id.toString(), jobModels);
+      await this.publishVideoProcessingJob(updatedAsset._id.toString(), jobModels);
       await this.initThumbnailGeneration(updatedAsset._id.toString(), updatedAsset.height, updatedAsset.width);
     }
   }
@@ -243,16 +249,16 @@ export class AssetService {
     }
   }
 
-  private async insertFilesData(assetId: string, heightWidthMaps: HeightWidthMap[]) {
+  async insertFilesData(assetId: string, heightWidthMaps: HeightWidthMap[]) {
     let files: FileDocument[] = [];
     for (let data of heightWidthMaps) {
-      let newFiles = await this.createFileAfterValidation(assetId, data.height, data.width);
+      let newFiles = await this.createPlaylistFileAfterValidation(assetId, data.height, data.width);
       files.push(newFiles);
     }
     return files;
   }
 
-  async createFileAfterValidation(assetId: string, height: number, width: number) {
+  async createPlaylistFileAfterValidation(assetId: string, height: number, width: number) {
     let name = Utils.getFileName(height);
     let doc = FileMapper.mapForSave(
       assetId,
@@ -264,6 +270,21 @@ export class AssetService {
       'File queued for processing'
     );
     return this.fileRepository.create(doc);
+  }
+
+  async insertSourceFile(assetId: string, height: number, width: number, size: number) {
+    let sourceFileName = 'download.mp4';
+    let fileToBeSaved = FileMapper.mapForSave(
+      assetId,
+      sourceFileName,
+      Constants.FILE_TYPE.DOWNLOAD,
+      height,
+      width,
+      Constants.FILE_STATUS.QUEUED,
+      'Source file queued for uploading',
+      size
+    );
+    return this.fileRepository.create(fileToBeSaved);
   }
 
   async checkForAssetReadyStatus(assetId: string) {
@@ -302,7 +323,7 @@ export class AssetService {
     );
   }
 
-  private publishThumbnailGenerationJob(assetId: string, fileId: string) {
+  publishThumbnailGenerationJob(assetId: string, fileId: string) {
     let thumbnailGenerationJob: Models.ThumbnailGenerationJobModel = {
       asset_id: assetId,
       file_id: fileId,
@@ -313,7 +334,7 @@ export class AssetService {
     );
   }
 
-  private async initThumbnailGeneration(assetId: string, height: number, width: number) {
+  async initThumbnailGeneration(assetId: string, height: number, width: number) {
     let thumbnailName = Utils.getThumbnailFileName();
     let fileToBeSaved = FileMapper.mapForSave(
       assetId,
@@ -326,5 +347,20 @@ export class AssetService {
     );
     let thumbnailFile = await this.fileRepository.create(fileToBeSaved);
     this.publishThumbnailGenerationJob(assetId, thumbnailFile._id.toString());
+  }
+
+  async initSourceFileUploadJob(assetId: string, height: number, width: number) {
+    let sourceFileName = 'download.mp4';
+    let fileToBeSaved = FileMapper.mapForSave(
+      assetId,
+      sourceFileName,
+      'source',
+      height,
+      width,
+      Constants.FILE_STATUS.QUEUED,
+      'Source file queued for uploading'
+    );
+    let sourceFile = await this.fileRepository.create(fileToBeSaved);
+    this.publishThumbnailGenerationJob(assetId, sourceFile._id.toString());
   }
 }
