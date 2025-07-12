@@ -10,10 +10,10 @@ export class FileRepository extends BaseRepository<FileDocument> {
     super(fileDocumentModel);
   }
 
-  async findAssetIdsWithExcludedStatuses(excludedStatuses: string[]): Promise<string[]> {
+  async findAssetIdsWithStatuses(statuses: string[]): Promise<string[]> {
     const result = await this.fileDocumentModel.aggregate([
       {
-        $match: { latest_status: { $nin: excludedStatuses } },
+        $match: { latest_status: { $in: statuses } },
       },
       {
         $group: {

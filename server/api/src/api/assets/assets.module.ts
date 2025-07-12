@@ -29,6 +29,7 @@ import { AssetController } from '@/src/api/assets/controllers/asset.controller';
 import { AuthModule } from '@/src/api/auth/auth.module';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { CronjobController } from '@/src/api/assets/controllers/cronjob.controller';
 
 @Module({
   imports: [
@@ -216,7 +217,7 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
       }),
     }),
   ],
-  controllers: [UploadController, AssetController],
+  controllers: [UploadController, AssetController, CronjobController],
   providers: [
     AssetRepository,
     FileRepository,
