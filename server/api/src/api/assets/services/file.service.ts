@@ -7,10 +7,15 @@ import { AssetService } from '@/src/api/assets/services/asset.service';
 import { AssetDocument } from '@/src/api/assets/schemas/assets.schema';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import fs from 'fs';
+import { JobManagerService } from '@/src/api/assets/services/job-manager.service';
 
 @Injectable()
 export class FileService {
-  constructor(private repository: FileRepository, private assetService: AssetService) {}
+  constructor(
+    private repository: FileRepository,
+    private assetService: AssetService,
+    private jobManagerService: JobManagerService
+  ) {}
 
   async updateFileStatus(fileId: string, status: string, details: string, size?: number) {
     let updatedData: mongoose.UpdateQuery<FileDocument> = {
@@ -117,6 +122,43 @@ export class FileService {
     console.log('local path ', localPath);
     if (fs.existsSync(localPath)) {
       fs.rmSync(localPath, { recursive: true, force: true });
+    }
+  }
+
+  async afterSave(doc: FileDocument) {
+    try {
+      if (doc.type === Constants.FILE_TYPE.PLAYLIST) {
+        console.log('file type is playlist, skipping further processing');
+        let jobModel = this.jobManagerService.getJobData(doc);
+        let jobData = await this.jobManagerService.publishVideoProcessingJob(jobModel);
+        console.log('job published for playlist file ', jobData);
+        if (jobData) {
+          await this.repository.findOneAndUpdate(
+            {
+              _id: doc._id,
+            },
+            {
+              job_id: jobData.id,
+            }
+          );
+        }
+      }
+      if (doc.type === Constants.FILE_TYPE.THUMBNAIL) {
+        let jobData = await this.jobManagerService.publishThumbnailGenerationJob(doc);
+        if (jobData) {
+          console.log('thumbnail generation job published for file ', jobData);
+          await this.repository.findOneAndUpdate(
+            {
+              _id: doc._id,
+            },
+            {
+              job_id: jobData.id,
+            }
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Error in afterSave for file service: ', err);
     }
   }
 }
