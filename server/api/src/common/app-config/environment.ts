@@ -53,4 +53,5 @@ export interface EnvironmentVariables {
   JWT_SECRET: string;
   REDIS_HOST: string;
   REDIS_PORT: number;
+  MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES: number;
 }

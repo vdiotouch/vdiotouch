@@ -7,7 +7,7 @@ import { Job, Queue } from 'bullmq';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { RabbitMqService } from '@/src/common/rabbit-mq/service/rabbitmq.service';
 
-@Processor(process.env.BULL_PROCESS_VIDEO_JOB_QUEUE)
+@Processor(process.env.BULL_PROCESS_VIDEO_JOB_QUEUE, { lockDuration: 1000 * 60 * 60 * 1 }) // 2 hours lock duration
 export class ProcessVideoWorker extends WorkerHost {
   constructor(
     private transcodingService: TranscodingService,

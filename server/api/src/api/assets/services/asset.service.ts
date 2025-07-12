@@ -7,7 +7,6 @@ import { GetAssetInputDto } from '@/src/api/assets/dtos/get-asset-input.dto';
 import { UpdateAssetInputDto } from '@/src/api/assets/dtos/update-asset-input.dto';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import mongoose from 'mongoose';
-import fs from 'fs';
 import { FileRepository } from '@/src/api/assets/repositories/file.repository';
 import { AssetMapper } from '@/src/api/assets/mapper/asset.mapper';
 import { JobManagerService } from '@/src/api/assets/services/job-manager.service';
@@ -18,16 +17,17 @@ import { FileDocument } from '@/src/api/assets/schemas/files.schema';
 import { UserDocument } from '@/src/api/auth/schemas/user.schema';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
+import { CleanupService } from '@/src/api/assets/services/cleanup.service';
 
 @Injectable()
 export class AssetService {
   constructor(
     private repository: AssetRepository,
     private fileRepository: FileRepository,
-    // private fileService: FileService,
     private jobManagerService: JobManagerService,
     @InjectQueue('validate-video') private validateVideoQueue: Queue,
-    @InjectQueue('download-video') private downloadVideoQueue: Queue
+    @InjectQueue('download-video') private downloadVideoQueue: Queue,
+    private cleanUpService: CleanupService
   ) {}
 
   async create(createVideoInput: CreateAssetInputDto, userDocument: UserDocument) {
@@ -131,15 +131,6 @@ export class AssetService {
     };
   }
 
-  deleteLocalAssetFile(_id: string) {
-    console.log('deleting local asset file ', _id);
-    let localPath = Utils.getLocalVideoRootPath(_id, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
-    console.log('local path ', localPath);
-    if (fs.existsSync(localPath)) {
-      fs.rmSync(localPath, { recursive: true, force: true });
-    }
-  }
-
   async checkForDeleteLocalAssetFile(assetId: string) {
     console.log('checking for ', assetId);
     let files = await this.fileRepository.find({
@@ -149,7 +140,7 @@ export class AssetService {
 
     console.log('length ', files.length, filesWithReadyStatus.length);
     if (files.length === filesWithReadyStatus.length) {
-      this.deleteLocalAssetFile(assetId);
+      this.cleanUpService.deleteLocalAssetFile(assetId);
     }
   }
 
@@ -186,7 +177,7 @@ export class AssetService {
     });
 
     if (updatedAsset.latest_status === Constants.VIDEO_STATUS.FAILED) {
-      this.deleteLocalAssetFile(updatedAsset._id.toString());
+      this.cleanUpService.deleteLocalAssetFile(updatedAsset._id.toString());
     }
     if (
       updatedAsset.latest_status === Constants.VIDEO_STATUS.DOWNLOADED ||
@@ -210,21 +201,24 @@ export class AssetService {
   }
 
   async afterSave(doc: AssetDocument) {
-    if (doc.source_url) {
-      try {
-        let job = await this.pushDownloadVideoJob(doc);
-        console.log('pushed download assets job', job.id);
-        await this.repository.findOneAndUpdate(
-          {
-            _id: mongoose.Types.ObjectId(doc._id.toString()),
-          },
-          {
-            job_id: job.id,
-          }
-        );
-      } catch (e) {
-        console.log('error pushing download assets job', e);
-      }
+    if (!doc.source_url) {
+      console.log('source_url is not present, skipping download assets job');
+      await this.updateAssetStatus(doc._id.toString(), Constants.VIDEO_STATUS.FAILED, 'source_url not present');
+      return;
+    }
+    try {
+      let job = await this.pushDownloadVideoJob(doc);
+      console.log('pushed download assets job', job.id);
+      await this.repository.findOneAndUpdate(
+        {
+          _id: mongoose.Types.ObjectId(doc._id.toString()),
+        },
+        {
+          job_id: job.id,
+        }
+      );
+    } catch (e) {
+      console.log('error pushing download assets job', e);
     }
   }
 

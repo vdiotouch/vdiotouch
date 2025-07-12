@@ -1,6 +1,6 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Asset, CreateAssetResponse, PaginatedAssetResponse } from '../models/asset.model';
-import { CreateAssetInputDto } from '../dtos/create-asset-input.dto';
+import { CreateAssetInputDto, RecreatedCreateAssetInputDto } from '../dtos/create-asset-input.dto';
 import { AssetService } from '../services/asset.service';
 import { AssetMapper } from '@/src/api/assets/mapper/asset.mapper';
 import { ListAssetInputDto } from '@/src/api/assets/dtos/list-asset-input.dto';
@@ -23,6 +23,29 @@ export class AssetResolver {
     @UserInfoDec() user: UserDocument
   ): Promise<Asset> {
     let createdAsset = await this.assetService.create(createAssetInputDto, user);
+    let statusLogs = AssetMapper.toStatusLogsResponse(createdAsset.status_logs as [StatusDocument]);
+    return AssetMapper.toAssetResponse(createdAsset, statusLogs);
+  }
+
+  @Mutation(() => CreateAssetResponse, { name: 'RecreateAsset' })
+  @UseGuards(GqlAuthGuard)
+  async recreateAsset(
+    @Args('recreatedCreateAssetInputDto') recreatedCreateAssetInputDto: RecreatedCreateAssetInputDto,
+    @UserInfoDec() user: UserDocument
+  ): Promise<Asset> {
+    let currentAsset = await this.assetService.getAsset({ _id: recreatedCreateAssetInputDto._id.toString() }, user);
+    if (!currentAsset) {
+      throw new NotFoundException('Asset not found');
+    }
+    let createdAsset = await this.assetService.create(
+      {
+        title: currentAsset.title,
+        description: currentAsset.description,
+        source_url: currentAsset.source_url,
+        tags: currentAsset.tags,
+      },
+      user
+    );
     let statusLogs = AssetMapper.toStatusLogsResponse(createdAsset.status_logs as [StatusDocument]);
     return AssetMapper.toAssetResponse(createdAsset, statusLogs);
   }

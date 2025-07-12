@@ -20,10 +20,6 @@ export class JobManagerService {
   getHeightWidthMap(): HeightWidthMap[] {
     return [
       {
-        height: 1080,
-        width: 1920,
-      },
-      {
         height: 720,
         width: 1280,
       },

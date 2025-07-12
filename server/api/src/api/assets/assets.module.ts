@@ -8,6 +8,7 @@ import { AssetMapper } from '@/src/api/assets/mapper/asset.mapper';
 import { ModuleRef } from '@nestjs/core';
 import { VideoDownloadService } from '@/src/api/assets/services/video-download.service';
 import { JobManagerService } from '@/src/api/assets/services/job-manager.service';
+import { CleanupService } from '@/src/api/assets/services/cleanup.service';
 import { FILE_COLLECTION_NAME, FileSchema } from '@/src/api/assets/schemas/files.schema';
 import { StatusMapper } from '@/src/api/assets/mapper/status.mapper';
 import { FileRepository } from '@/src/api/assets/repositories/file.repository';
@@ -28,6 +29,7 @@ import { AssetController } from '@/src/api/assets/controllers/asset.controller';
 import { AuthModule } from '@/src/api/auth/auth.module';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
+import { CronjobController } from '@/src/api/assets/controllers/cronjob.controller';
 
 @Module({
   imports: [
@@ -220,7 +222,7 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
       }),
     }),
   ],
-  controllers: [UploadController, AssetController],
+  controllers: [UploadController, AssetController, CronjobController],
   providers: [
     AssetRepository,
     FileRepository,
@@ -237,6 +239,7 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
     TusService,
     thumbnailByAssetLoader,
     FilesByAssetLoader,
+    CleanupService,
   ],
 })
 export class AssetsModule {}
