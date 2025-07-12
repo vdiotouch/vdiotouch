@@ -18,7 +18,7 @@ export class CleanupService {
     ]);
 
     let allDirectories = fs.readdirSync(AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY, { withFileTypes: true });
-    let dirIds = allDirectories.map((dir) => new mongoose.Types.ObjectId(dir.name));
+    let dirIds = allDirectories.map((dir) => mongoose.Types.ObjectId(dir.name));
     let assets = await this.assetRepository.find({
       _id: { $in: dirIds },
     });
