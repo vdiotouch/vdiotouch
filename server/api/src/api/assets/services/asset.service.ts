@@ -219,6 +219,11 @@ export class AssetService {
       );
     } catch (e) {
       console.log('error pushing download assets job', e);
+      await this.updateAssetStatus(
+        doc._id.toString(),
+        Constants.VIDEO_STATUS.FAILED,
+        `Error pushing download job. ${e.toString()}`
+      );
     }
   }
 
