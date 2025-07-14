@@ -190,6 +190,11 @@ export class AssetService {
         })
         .catch((err) => {
           console.log('error pushing validate assets job', err);
+          this.updateAssetStatus(
+            updatedAsset._id.toString(),
+            Constants.VIDEO_STATUS.FAILED,
+            `Error pushing validate job. ${err.toString()}`
+          );
         });
     }
     if (updatedAsset.latest_status === Constants.VIDEO_STATUS.VALIDATED) {
