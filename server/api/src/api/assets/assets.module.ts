@@ -152,6 +152,10 @@ import { CronjobController } from '@/src/api/assets/controllers/cronjob.controll
       name: 'thumbnail-generation',
       adapter: BullMQAdapter,
     }),
+    BullBoardModule.forFeature({
+      name: 'upload-video',
+      adapter: BullMQAdapter,
+    }),
     MongooseModule.forFeatureAsync([
       {
         name: ASSET_COLLECTION_NAME,

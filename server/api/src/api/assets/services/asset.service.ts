@@ -199,8 +199,14 @@ export class AssetService {
     }
     if (updatedAsset.latest_status === Constants.VIDEO_STATUS.VALIDATED) {
       let heightWidthMapByHeight = this.jobManagerService.getAllHeightWidthMapByHeight(updatedAsset.height);
-      await this.insertFilesData(updatedAsset._id.toString(), heightWidthMapByHeight);
+      await this.insertMenifestFilesData(updatedAsset._id.toString(), heightWidthMapByHeight);
       await this.createThumbnailFile(updatedAsset._id.toString(), updatedAsset.height, updatedAsset.width);
+      await this.createSourceFile(
+        updatedAsset._id.toString(),
+        updatedAsset.height,
+        updatedAsset.width,
+        updatedAsset.size
+      );
       await this.updateAssetStatus(updatedAsset._id.toString(), Constants.VIDEO_STATUS.PROCESSING, 'Video processing');
     }
   }
@@ -232,7 +238,7 @@ export class AssetService {
     }
   }
 
-  async insertFilesData(assetId: string, heightWidthMaps: HeightWidthMap[]) {
+  async insertMenifestFilesData(assetId: string, heightWidthMaps: HeightWidthMap[]) {
     let files: FileDocument[] = [];
     for (let data of heightWidthMaps) {
       let newFiles = await this.createPlaylistFileAfterValidation(assetId, data.height, data.width);
@@ -253,21 +259,6 @@ export class AssetService {
       'File queued for processing'
     );
     return this.fileRepository.create(doc);
-  }
-
-  async insertSourceFile(assetId: string, height: number, width: number, size: number) {
-    let sourceFileName = 'download.mp4';
-    let fileToBeSaved = FileMapper.mapForSave(
-      assetId,
-      sourceFileName,
-      Constants.FILE_TYPE.DOWNLOAD,
-      height,
-      width,
-      Constants.FILE_STATUS.QUEUED,
-      'Source file queued for uploading',
-      size
-    );
-    return this.fileRepository.create(fileToBeSaved);
   }
 
   async checkForAssetReadyStatus(assetId: string) {
@@ -320,4 +311,18 @@ export class AssetService {
     return this.fileRepository.create(fileToBeSaved);
   }
 
+  async createSourceFile(assetId: string, height: number, width: number, size: number) {
+    let sourceFileName = 'download.mp4';
+    let fileToBeSaved = FileMapper.mapForSave(
+      assetId,
+      sourceFileName,
+      Constants.FILE_TYPE.SOURCE,
+      height,
+      width,
+      Constants.FILE_STATUS.QUEUED,
+      'Source file queued for uploading',
+      size
+    );
+    return this.fileRepository.create(fileToBeSaved);
+  }
 }

@@ -18,6 +18,13 @@ export class FileService {
   ) {}
 
   async updateFileStatus(fileId: string, status: string, details: string, size?: number) {
+    let file = await this.repository.findOne({
+      _id: mongoose.Types.ObjectId(fileId),
+    });
+    if (!file) {
+      throw new Error(`File with id ${fileId} not found`);
+    }
+
     let updatedData: mongoose.UpdateQuery<FileDocument> = {
       latest_status: status,
       $push: {
@@ -27,7 +34,7 @@ export class FileService {
         },
       },
     };
-    if (size) {
+    if (size && file.type !== Constants.FILE_TYPE.SOURCE) {
       updatedData = {
         ...updatedData,
         size: size,
@@ -47,7 +54,7 @@ export class FileService {
     let updatedFile = await this.repository.findOne({
       _id: mongoose.Types.ObjectId(oldDoc._id.toString()),
     });
-    if (updatedFile.type === Constants.FILE_TYPE.THUMBNAIL) {
+    if (updatedFile.type === Constants.FILE_TYPE.THUMBNAIL || updatedFile.type === Constants.FILE_TYPE.SOURCE) {
       return;
     }
     let assetId = updatedFile.asset_id;
@@ -147,6 +154,22 @@ export class FileService {
         let jobData = await this.jobManagerService.publishThumbnailGenerationJob(doc);
         if (jobData) {
           console.log('thumbnail generation job published for file ', jobData);
+          await this.repository.findOneAndUpdate(
+            {
+              _id: doc._id,
+            },
+            {
+              job_id: jobData.id,
+            }
+          );
+        }
+      }
+      if (doc.type === Constants.FILE_TYPE.SOURCE) {
+        console.log('file type is download, skipping further processing');
+        let jobModel = this.jobManagerService.getJobData(doc);
+        let jobData = await this.jobManagerService.publishSourceFileUploadJob(jobModel, doc.name);
+        console.log('job published for download file ', jobData);
+        if (jobData) {
           await this.repository.findOneAndUpdate(
             {
               _id: doc._id,
