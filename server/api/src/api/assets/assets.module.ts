@@ -111,6 +111,17 @@ import { CronjobController } from '@/src/api/assets/controllers/cronjob.controll
             removeOnFail: true,
           },
         }),
+      },
+      {
+        name: 'upload-video',
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_UPLOAD_JOB_QUEUE,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        }),
       }
     ),
     BullBoardModule.forFeature({
@@ -139,6 +150,10 @@ import { CronjobController } from '@/src/api/assets/controllers/cronjob.controll
     }),
     BullBoardModule.forFeature({
       name: 'thumbnail-generation',
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'upload-video',
       adapter: BullMQAdapter,
     }),
     MongooseModule.forFeatureAsync([

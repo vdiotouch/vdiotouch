@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { HeightWidthMap } from '@/src/api/assets/models/file.model';
 import { FileDocument } from '@/src/api/assets/schemas/files.schema';
-import { Models } from 'video-touch-common';
+import { Constants, Models } from 'video-touch-common';
 import { JobMetadataModel } from 'video-touch-common/dist/models';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
@@ -14,7 +14,8 @@ export class JobManagerService {
     @InjectQueue('process_video_480p') private videoProcessQueue480p: Queue,
     @InjectQueue('process_video_540p') private videoProcessQueue540p: Queue,
     @InjectQueue('process_video_720p') private videoProcessQueue720p: Queue,
-    @InjectQueue('thumbnail-generation') private thumbnailGenerationQueue: Queue
+    @InjectQueue('thumbnail-generation') private thumbnailGenerationQueue: Queue,
+    @InjectQueue('upload-video') private videoUploadQueue: Queue
   ) {}
 
   getHeightWidthMap(): HeightWidthMap[] {
@@ -108,5 +109,18 @@ export class JobManagerService {
       AppConfigService.appConfig.BULL_THUMBNAIL_GENERATION_JOB_QUEUE,
       thumbnailGenerationJob
     );
+  }
+
+  async publishSourceFileUploadJob(jobModel: JobMetadataModel, fileName: string) {
+    let uploadJob: Models.VideoUploadJobModel = {
+      asset_id: jobModel.asset_id,
+      file_id: jobModel.file_id,
+      height: jobModel.height,
+      width: jobModel.width,
+      type: Constants.FILE_TYPE.SOURCE,
+      name: fileName,
+    };
+    console.log('publishing source file upload job for ', uploadJob);
+    return this.videoUploadQueue.add(jobModel.processRoutingKey, uploadJob);
   }
 }
