@@ -30,4 +30,20 @@ export class FileRepository extends BaseRepository<FileDocument> {
 
     return result.map((item) => item._id.toString());
   }
+
+  /**
+   * Finds job IDs for files with the specified statuses
+   * @param statuses Array of file statuses to match
+   * @returns Array of job IDs (non-null values only)
+   */
+  async findFilesByStatuses(statuses: string[]): Promise<FileDocument[]> {
+    return this.fileDocumentModel
+      .find(
+        {
+          latest_status: { $in: statuses },
+          job_id: { $exists: true, $ne: null },
+        }
+      )
+      .lean();
+  }
 }
