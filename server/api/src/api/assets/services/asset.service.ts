@@ -146,19 +146,9 @@ export class AssetService {
 
   async checkForAssetFailedStatus(assetId: string) {
     try {
-      let notFailedFilesCount = await this.fileRepository.count({
-        asset_id: mongoose.Types.ObjectId(assetId),
-        latest_status: {
-          $ne: Constants.FILE_STATUS.FAILED,
-        },
-      });
-
-      if (notFailedFilesCount > 0) {
-        return;
-      }
-
       let files = await this.fileRepository.find({
         asset_id: mongoose.Types.ObjectId(assetId),
+        type: Constants.FILE_TYPE.PLAYLIST,
       });
 
       let failedFiles = files.filter((file) => file.latest_status === Constants.FILE_STATUS.FAILED);
