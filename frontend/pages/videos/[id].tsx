@@ -14,6 +14,8 @@ import VideoTitleComponent from "@/components/ui/video-title-component";
 import VideoFilesComponent from "@/components/ui/video-files-component";
 import { NextPage } from "next";
 import PrivateRoute from "@/components/private-route";
+import crypto from "crypto";
+import React, { useEffect, useState } from "react";
 
 const PlyrHlsPlayer = dynamic(() => import("@/components/ui/video-player"), {
   ssr: false,
@@ -34,6 +36,7 @@ const VideoDetailsPage: NextPage = () => {
     variables: {
       id: id,
     },
+    fetchPolicy: "network-only", // Force network request on each page load, don't use cache
   });
 
   if (loading) {

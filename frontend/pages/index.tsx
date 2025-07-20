@@ -203,6 +203,7 @@ const HomePage: NextPage = () => {
       first: pageSize,
       after: null,
     },
+    fetchPolicy: "network-only",
   });
 
   console.log("data ", data);
