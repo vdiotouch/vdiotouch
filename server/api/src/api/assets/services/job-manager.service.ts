@@ -15,6 +15,7 @@ export class JobManagerService {
     @InjectQueue('process_video_480p') private videoProcessQueue480p: Queue,
     @InjectQueue('process_video_540p') private videoProcessQueue540p: Queue,
     @InjectQueue('process_video_720p') private videoProcessQueue720p: Queue,
+    @InjectQueue('process_video_1080p') private videoProcessQueue1080p: Queue,
     @InjectQueue('thumbnail-generation') private thumbnailGenerationQueue: Queue,
     @InjectQueue('upload-video') private videoUploadQueue: Queue
   ) {}
@@ -38,6 +39,9 @@ export class JobManagerService {
   async getVideoProcessingJobByJobId(jobId: string, height: number): Promise<JobMetadataModel | null> {
     let queue: Queue | null = null;
     switch (height) {
+      case 1080:
+        queue = this.videoProcessQueue1080p;
+        break;
       case 360:
         queue = this.videoProcessQueue360p;
         break;
@@ -63,12 +67,12 @@ export class JobManagerService {
   getHeightWidthMap(): HeightWidthMap[] {
     return [
       {
-        height: 720,
-        width: 1280,
+        height: 1080,
+        width: 1920,
       },
       {
-        height: 540,
-        width: 960,
+        height: 720,
+        width: 1280,
       },
       {
         height: 480,
@@ -83,6 +87,8 @@ export class JobManagerService {
 
   getHeightWiseQueueName(height: number) {
     switch (height) {
+      case 1080:
+        return AppConfigService.appConfig.BULL_1080P_PROCESS_VIDEO_JOB_QUEUE;
       case 720:
         return AppConfigService.appConfig.BULL_720P_PROCESS_VIDEO_JOB_QUEUE;
       case 540:
@@ -144,6 +150,10 @@ export class JobManagerService {
       });
     } else if (jobModel.height === 720) {
       return this.videoProcessQueue720p.add(jobModel.processRoutingKey, jobModel, {
+        jobId: uuidv4(),
+      });
+    } else if (jobModel.height === 1080) {
+      return this.videoProcessQueue1080p.add(jobModel.processRoutingKey, jobModel, {
         jobId: uuidv4(),
       });
     }

@@ -81,6 +81,17 @@ import { JobVerificationService } from '@/src/api/assets/services/job-verificati
         }),
       },
       {
+        name: 'process_video_1080p',
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_1080P_PROCESS_VIDEO_JOB_QUEUE,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        }),
+      },
+      {
         name: 'validate-video',
         inject: [AppConfigService],
         useFactory: () => ({
@@ -139,6 +150,10 @@ import { JobVerificationService } from '@/src/api/assets/services/job-verificati
     }),
     BullBoardModule.forFeature({
       name: 'process_video_720p',
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'process_video_1080p',
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
