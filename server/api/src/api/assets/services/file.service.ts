@@ -166,8 +166,7 @@ export class FileService {
       }
       if (doc.type === Constants.FILE_TYPE.SOURCE) {
         console.log('file type is download, skipping further processing');
-        let jobModel = this.jobManagerService.getJobData(doc);
-        let jobData = await this.jobManagerService.publishSourceFileUploadJob(jobModel, doc.name);
+        let jobData = await this.jobManagerService.publishSourceFileUploadJob(doc);
         console.log('job published for download file ', jobData);
         if (jobData) {
           await this.repository.findOneAndUpdate(
