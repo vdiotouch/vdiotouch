@@ -6,6 +6,7 @@ import { Constants, Models } from 'video-touch-common';
 import { JobMetadataModel } from 'video-touch-common/dist/models';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { v4 as uuidv4 } from 'uuid';
 
 @Injectable()
 export class JobManagerService {
@@ -17,6 +18,47 @@ export class JobManagerService {
     @InjectQueue('thumbnail-generation') private thumbnailGenerationQueue: Queue,
     @InjectQueue('upload-video') private videoUploadQueue: Queue
   ) {}
+
+  async getThumbnailJobByJobId(jobId: string): Promise<Models.ThumbnailGenerationJobModel | null> {
+    const job = await this.thumbnailGenerationQueue.getJob(jobId);
+    if (job) {
+      return job.data as Models.ThumbnailGenerationJobModel;
+    }
+    return null;
+  }
+
+  async getUploadSourceFileJobByJobId(jobId: string): Promise<Models.VideoUploadJobModel | null> {
+    const job = await this.videoUploadQueue.getJob(jobId);
+    if (job) {
+      return job.data as Models.VideoUploadJobModel;
+    }
+    return null;
+  }
+
+  async getVideoProcessingJobByJobId(jobId: string, height: number): Promise<JobMetadataModel | null> {
+    let queue: Queue | null = null;
+    switch (height) {
+      case 360:
+        queue = this.videoProcessQueue360p;
+        break;
+      case 480:
+        queue = this.videoProcessQueue480p;
+        break;
+      case 540:
+        queue = this.videoProcessQueue540p;
+        break;
+      case 720:
+        queue = this.videoProcessQueue720p;
+        break;
+      default:
+        return null;
+    }
+    const job = await queue.getJob(jobId);
+    if (job) {
+      return job.data as JobMetadataModel;
+    }
+    return null;
+  }
 
   getHeightWidthMap(): HeightWidthMap[] {
     return [
@@ -89,13 +131,21 @@ export class JobManagerService {
   async publishVideoProcessingJob(jobModel: JobMetadataModel) {
     console.log('publishing video processing job for ', jobModel.processRoutingKey, jobModel);
     if (jobModel.height === 360) {
-      return this.videoProcessQueue360p.add(jobModel.processRoutingKey, jobModel);
+      return this.videoProcessQueue360p.add(jobModel.processRoutingKey, jobModel, {
+        jobId: uuidv4(),
+      });
     } else if (jobModel.height === 480) {
-      return this.videoProcessQueue480p.add(jobModel.processRoutingKey, jobModel);
+      return this.videoProcessQueue480p.add(jobModel.processRoutingKey, jobModel, {
+        jobId: uuidv4(),
+      });
     } else if (jobModel.height === 540) {
-      return this.videoProcessQueue540p.add(jobModel.processRoutingKey, jobModel);
+      return this.videoProcessQueue540p.add(jobModel.processRoutingKey, jobModel, {
+        jobId: uuidv4(),
+      });
     } else if (jobModel.height === 720) {
-      return this.videoProcessQueue720p.add(jobModel.processRoutingKey, jobModel);
+      return this.videoProcessQueue720p.add(jobModel.processRoutingKey, jobModel, {
+        jobId: uuidv4(),
+      });
     }
     return null;
   }
@@ -107,20 +157,25 @@ export class JobManagerService {
     };
     return this.thumbnailGenerationQueue.add(
       AppConfigService.appConfig.BULL_THUMBNAIL_GENERATION_JOB_QUEUE,
-      thumbnailGenerationJob
+      thumbnailGenerationJob,
+      {
+        jobId: uuidv4(),
+      }
     );
   }
 
-  async publishSourceFileUploadJob(jobModel: JobMetadataModel, fileName: string) {
+  async publishSourceFileUploadJob(file: FileDocument) {
     let uploadJob: Models.VideoUploadJobModel = {
-      asset_id: jobModel.asset_id,
-      file_id: jobModel.file_id,
-      height: jobModel.height,
-      width: jobModel.width,
+      asset_id: file.asset_id.toString(),
+      file_id: file._id.toString(),
+      height: file.height,
+      width: file.width,
       type: Constants.FILE_TYPE.SOURCE,
-      name: fileName,
+      name: file.name,
     };
     console.log('publishing source file upload job for ', uploadJob);
-    return this.videoUploadQueue.add(jobModel.processRoutingKey, uploadJob);
+    return this.videoUploadQueue.add(AppConfigService.appConfig.BULL_UPLOAD_JOB_QUEUE, uploadJob, {
+      jobId: uuidv4(),
+    });
   }
 }

@@ -30,6 +30,7 @@ import { AuthModule } from '@/src/api/auth/auth.module';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { CronjobController } from '@/src/api/assets/controllers/cronjob.controller';
+import { JobVerificationService } from '@/src/api/assets/services/job-verification.service';
 
 @Module({
   imports: [
@@ -255,6 +256,7 @@ import { CronjobController } from '@/src/api/assets/controllers/cronjob.controll
     thumbnailByAssetLoader,
     FilesByAssetLoader,
     CleanupService,
+    JobVerificationService,
   ],
 })
 export class AssetsModule {}
