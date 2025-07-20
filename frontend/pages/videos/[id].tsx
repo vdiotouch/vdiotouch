@@ -1,12 +1,10 @@
-import { Separator } from "@/components/ui/separator";
-import Step from "@/components/ui/step";
 import Data from "@/components/ui/data";
 import { useRouter } from "next/router";
 import { useQuery } from "@apollo/client";
 import { GET_ASSET_QUERY } from "@/api/graphql/queries/query";
 import { VideoDetails } from "@/api/graphql/types/video-details";
 import { bytesToMegaBytes, secondsToHHMMSS } from "@/lib/utils";
-import { Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -16,6 +14,8 @@ import VideoTitleComponent from "@/components/ui/video-title-component";
 import VideoResolutionsComponent from "@/components/ui/video-resolutions-component";
 import { NextPage } from "next";
 import PrivateRoute from "@/components/private-route";
+import crypto from "crypto";
+import { useEffect } from "react";
 
 const PlyrHlsPlayer = dynamic(() => import("@/components/ui/video-player"), {
   ssr: false,
@@ -37,6 +37,41 @@ const VideoDetailsPage: NextPage = () => {
       id: id,
     },
   });
+
+  const generateSecureUrl = (
+    baseUrl: string,
+    path: string,
+    ttlInSec: number,
+    secret: string,
+  ): string => {
+    const expires = Math.floor(Date.now() / 1000) + ttlInSec;
+
+    // Token generation
+    const tokenString = `${expires}${path} ${secret}`;
+    console.log("Token String:", tokenString);
+    const tokenHash = crypto.createHash("md5").update(tokenString).digest();
+    const token = Buffer.from(tokenHash)
+      .toString("base64")
+      .replace(/\n/g, "")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=/g, "");
+
+    return `${baseUrl}${path}?md5=${token}&expires=${expires}`;
+  };
+
+  useEffect(() => {
+    if (!loading) {
+      console.log("Data fetched:", data);
+      console.log(data.GetAsset.master_playlist_url);
+      let baseUrl = "https://eogwqo2k9i.gpcdn.net";
+      let path = "/videos/687bf0831dd02b49fd747726/main.m3u8";
+      let secret = ``;
+      let ttlInSec = 3600*5; // 1 hour
+      let secureUrl = generateSecureUrl(baseUrl, path, ttlInSec, secret);
+      console.log("Secure URL:", secureUrl);
+    }
+  }, [data, loading]);
 
   if (loading) {
     return (
@@ -120,10 +155,22 @@ const VideoDetailsPage: NextPage = () => {
                 <Badge className="mb-2" variant="secondary">
                   {videoDetails.latest_status}
                 </Badge>
-                <Data label={"Created At"} value={new Date(videoDetails.created_at).toLocaleString()} />
-                <Data label={"Resolution"} value={`${videoDetails.height} x ${videoDetails.width}`} />
-                <Data label={"Duration"} value={secondsToHHMMSS(videoDetails.duration)} />
-                <Data label={"Size"} value={`${bytesToMegaBytes(videoDetails.size)} MB`} />
+                <Data
+                  label={"Created At"}
+                  value={new Date(videoDetails.created_at).toLocaleString()}
+                />
+                <Data
+                  label={"Resolution"}
+                  value={`${videoDetails.height} x ${videoDetails.width}`}
+                />
+                <Data
+                  label={"Duration"}
+                  value={secondsToHHMMSS(videoDetails.duration)}
+                />
+                <Data
+                  label={"Size"}
+                  value={`${bytesToMegaBytes(videoDetails.size)} MB`}
+                />
               </div>
             </CardContent>
           </Card>
@@ -134,22 +181,29 @@ const VideoDetailsPage: NextPage = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[...videoDetails.status_logs].reverse().map((status, index) => (
-                  <div key={index} className="flex items-start space-x-3 pb-4 border-b last:border-0">
-                    <div className={`bg-primary/10 p-2 rounded-full ${index === 0 && status.status !== 'READY' ? 'blink' : ''}`}>
-                      <div className="h-2 w-2 rounded-full bg-primary"></div>
+                {[...videoDetails.status_logs]
+                  .reverse()
+                  .map((status, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start space-x-3 pb-4 border-b last:border-0"
+                    >
+                      <div
+                        className={`bg-primary/10 p-2 rounded-full ${index === 0 && status.status !== "READY" ? "blink" : ""}`}
+                      >
+                        <div className="h-2 w-2 rounded-full bg-primary"></div>
+                      </div>
+                      <div>
+                        <p className="font-medium">{status.status}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {new Date(status.created_at).toLocaleString()}
+                        </p>
+                        {status.details && (
+                          <p className="text-sm mt-1">{status.details}</p>
+                        )}
+                      </div>
                     </div>
-                    <div>
-                      <p className="font-medium">{status.status}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {new Date(status.created_at).toLocaleString()}
-                      </p>
-                      {status.details && (
-                        <p className="text-sm mt-1">{status.details}</p>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  ))}
               </div>
             </CardContent>
           </Card>
