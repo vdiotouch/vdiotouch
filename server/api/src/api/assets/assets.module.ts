@@ -30,6 +30,7 @@ import { AuthModule } from '@/src/api/auth/auth.module';
 import { BullBoardModule } from '@bull-board/nestjs';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { CronjobController } from '@/src/api/assets/controllers/cronjob.controller';
+import { JobVerificationService } from '@/src/api/assets/services/job-verification.service';
 
 @Module({
   imports: [
@@ -80,6 +81,17 @@ import { CronjobController } from '@/src/api/assets/controllers/cronjob.controll
         }),
       },
       {
+        name: 'process_video_1080p',
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_1080P_PROCESS_VIDEO_JOB_QUEUE,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        }),
+      },
+      {
         name: 'validate-video',
         inject: [AppConfigService],
         useFactory: () => ({
@@ -111,6 +123,17 @@ import { CronjobController } from '@/src/api/assets/controllers/cronjob.controll
             removeOnFail: true,
           },
         }),
+      },
+      {
+        name: 'upload-video',
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_UPLOAD_JOB_QUEUE,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        }),
       }
     ),
     BullBoardModule.forFeature({
@@ -130,6 +153,10 @@ import { CronjobController } from '@/src/api/assets/controllers/cronjob.controll
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
+      name: 'process_video_1080p',
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
       name: 'validate-video',
       adapter: BullMQAdapter,
     }),
@@ -139,6 +166,10 @@ import { CronjobController } from '@/src/api/assets/controllers/cronjob.controll
     }),
     BullBoardModule.forFeature({
       name: 'thumbnail-generation',
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'upload-video',
       adapter: BullMQAdapter,
     }),
     MongooseModule.forFeatureAsync([
@@ -240,6 +271,7 @@ import { CronjobController } from '@/src/api/assets/controllers/cronjob.controll
     thumbnailByAssetLoader,
     FilesByAssetLoader,
     CleanupService,
+    JobVerificationService,
   ],
 })
 export class AssetsModule {}

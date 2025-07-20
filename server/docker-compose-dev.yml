@@ -133,7 +133,7 @@ services:
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_360P_PROCESS_VIDEO_JOB_QUEUE
     volumes:
       - ./temp_videos:$TEMP_VIDEO_DIRECTORY
-    cpuset: "0-1"
+    cpuset: "0-3"
     deploy:
       restart_policy:
         condition: on-failure
@@ -156,37 +156,12 @@ services:
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_480P_PROCESS_VIDEO_JOB_QUEUE
     volumes:
       - ./temp_videos:$TEMP_VIDEO_DIRECTORY
-    cpuset: "2-3"
+    cpuset: "4-7"
     deploy:
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
-
-
-
-  process-video-worker-540p:
-    build:
-      context: workers/process-video-worker
-      dockerfile: Dockerfile
-    container_name: process-video-worker-540p
-    env_file: .env
-    depends_on:
-      - video-touch-api
-      - rabbitmq
-      - redis
-    environment:
-      - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
-      - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_540P_PROCESS_VIDEO_JOB_QUEUE
-    volumes:
-      - ./temp_videos:$TEMP_VIDEO_DIRECTORY
-    cpuset: "4-5"
-    deploy:
-      restart_policy:
-        condition: on-failure
-        delay: 5s
-        max_attempts: 3
-
 
   process-video-worker-720p:
     build:
@@ -203,12 +178,35 @@ services:
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_720P_PROCESS_VIDEO_JOB_QUEUE
     volumes:
       - ./temp_videos:$TEMP_VIDEO_DIRECTORY
-    cpuset: "6-7"
+    cpuset: "8-11"
     deploy:
       restart_policy:
         condition: on-failure
         delay: 5s
         max_attempts: 3
+
+  process-video-worker-1080p:
+    build:
+      context: workers/process-video-worker
+      dockerfile: Dockerfile
+    container_name: process-video-worker-1080p
+    env_file: .env
+    depends_on:
+      - video-touch-api
+      - rabbitmq
+      - redis
+    environment:
+      - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
+      - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_1080P_PROCESS_VIDEO_JOB_QUEUE
+    volumes:
+      - ./temp_videos:$TEMP_VIDEO_DIRECTORY
+    cpuset: "8-11"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
 
   upload-video-worker:
     build:

@@ -146,19 +146,9 @@ export class AssetService {
 
   async checkForAssetFailedStatus(assetId: string) {
     try {
-      let notFailedFilesCount = await this.fileRepository.count({
-        asset_id: mongoose.Types.ObjectId(assetId),
-        latest_status: {
-          $ne: Constants.FILE_STATUS.FAILED,
-        },
-      });
-
-      if (notFailedFilesCount > 0) {
-        return;
-      }
-
       let files = await this.fileRepository.find({
         asset_id: mongoose.Types.ObjectId(assetId),
+        type: Constants.FILE_TYPE.PLAYLIST,
       });
 
       let failedFiles = files.filter((file) => file.latest_status === Constants.FILE_STATUS.FAILED);
@@ -199,8 +189,14 @@ export class AssetService {
     }
     if (updatedAsset.latest_status === Constants.VIDEO_STATUS.VALIDATED) {
       let heightWidthMapByHeight = this.jobManagerService.getAllHeightWidthMapByHeight(updatedAsset.height);
-      await this.insertFilesData(updatedAsset._id.toString(), heightWidthMapByHeight);
+      await this.insertMenifestFilesData(updatedAsset._id.toString(), heightWidthMapByHeight);
       await this.createThumbnailFile(updatedAsset._id.toString(), updatedAsset.height, updatedAsset.width);
+      await this.createSourceFile(
+        updatedAsset._id.toString(),
+        updatedAsset.height,
+        updatedAsset.width,
+        updatedAsset.size
+      );
       await this.updateAssetStatus(updatedAsset._id.toString(), Constants.VIDEO_STATUS.PROCESSING, 'Video processing');
     }
   }
@@ -232,16 +228,16 @@ export class AssetService {
     }
   }
 
-  private async insertFilesData(assetId: string, heightWidthMaps: HeightWidthMap[]) {
+  async insertMenifestFilesData(assetId: string, heightWidthMaps: HeightWidthMap[]) {
     let files: FileDocument[] = [];
     for (let data of heightWidthMaps) {
-      let newFiles = await this.createFileAfterValidation(assetId, data.height, data.width);
+      let newFiles = await this.createPlaylistFileAfterValidation(assetId, data.height, data.width);
       files.push(newFiles);
     }
     return files;
   }
 
-  async createFileAfterValidation(assetId: string, height: number, width: number) {
+  async createPlaylistFileAfterValidation(assetId: string, height: number, width: number) {
     let name = Utils.getFileName(height);
     let doc = FileMapper.mapForSave(
       assetId,
@@ -301,6 +297,21 @@ export class AssetService {
       width,
       Constants.FILE_STATUS.QUEUED,
       'Thumbnail queued for processing'
+    );
+    return this.fileRepository.create(fileToBeSaved);
+  }
+
+  async createSourceFile(assetId: string, height: number, width: number, size: number) {
+    let sourceFileName = 'download.mp4';
+    let fileToBeSaved = FileMapper.mapForSave(
+      assetId,
+      sourceFileName,
+      Constants.FILE_TYPE.SOURCE,
+      height,
+      width,
+      Constants.FILE_STATUS.QUEUED,
+      'Source file queued for uploading',
+      size
     );
     return this.fileRepository.create(fileToBeSaved);
   }

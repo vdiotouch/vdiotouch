@@ -19,7 +19,11 @@ export class VideoUploaderJobHandler extends WorkerHost {
   async process(job: Job): Promise<any> {
     let msg: Models.VideoUploadJobModel = job.data as Models.VideoUploadJobModel;
     console.log(`uploading ${msg.height}p video`, msg.asset_id.toString());
-    await this.upload(msg);
+    if (msg.type === Constants.FILE_TYPE.SOURCE) {
+      return this.uploadSourceFile(msg);
+    } else {
+      return this.uploadManifestFiles(msg);
+    }
   }
 
   async syncDirToS3(localDir: string, s3Dir: string) {
@@ -32,14 +36,24 @@ export class VideoUploaderJobHandler extends WorkerHost {
     return terminal(command);
   }
 
-  async upload(msg: Models.VideoUploadJobModel) {
+  async syncFileToS3(localFile: string, s3File: string) {
+    console.log('syncing file to s3', localFile, s3File);
+
+    let command = `aws s3 cp ${localFile} ${s3File}`;
+    if (AppConfigService.appConfig.AWS_PROFILE_NAME) {
+      command += ` --profile ${AppConfigService.appConfig.AWS_PROFILE_NAME}`;
+    }
+    return terminal(command);
+  }
+
+  async uploadManifestFiles(msg: Models.VideoUploadJobModel) {
     try {
       let localFilePath = Utils.getLocalResolutionPath(
         msg.asset_id.toString(),
         msg.height,
         AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
       );
-      let s3VideoPath = Utils.getS3VideoPath(
+      let s3VideoPath = Utils.getS3VideoPathByHeight(
         msg.asset_id.toString(),
         msg.height,
         AppConfigService.appConfig.AWS_S3_BUCKET_NAME,
@@ -59,6 +73,34 @@ export class VideoUploaderJobHandler extends WorkerHost {
       this.publishUpdateFileStatusEvent(
         msg.file_id.toString(),
         'File uploading failed',
+        0,
+        Constants.FILE_STATUS.FAILED,
+      );
+    }
+  }
+
+  async uploadSourceFile(msg: Models.VideoUploadJobModel) {
+    try {
+      let localFilePath = `${Utils.getLocalVideoRootPath(
+        msg.asset_id.toString(),
+        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
+      )}/${msg.asset_id}.mp4`;
+
+      let s3SourceFileVideoPath = Utils.getS3SourceFileVideoPath(
+        msg.asset_id.toString(),
+        msg.name,
+        AppConfigService.appConfig.AWS_S3_BUCKET_NAME,
+      );
+      let res = await this.syncFileToS3(localFilePath, s3SourceFileVideoPath);
+      console.log(`source file uploaded:`, res);
+
+      this.publishUpdateFileStatusEvent(msg.file_id.toString(), 'Source file uploaded', 0, Constants.FILE_STATUS.READY);
+    } catch (err: any) {
+      console.log('error in uploading source file', err);
+
+      this.publishUpdateFileStatusEvent(
+        msg.file_id.toString(),
+        'Source file uploading failed',
         0,
         Constants.FILE_STATUS.FAILED,
       );
