@@ -15,7 +15,7 @@ import VideoResolutionsComponent from "@/components/ui/video-resolutions-compone
 import { NextPage } from "next";
 import PrivateRoute from "@/components/private-route";
 import crypto from "crypto";
-import { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 
 const PlyrHlsPlayer = dynamic(() => import("@/components/ui/video-player"), {
   ssr: false,
@@ -36,42 +36,8 @@ const VideoDetailsPage: NextPage = () => {
     variables: {
       id: id,
     },
+    fetchPolicy: "network-only", // Force network request on each page load, don't use cache
   });
-
-  const generateSecureUrl = (
-    baseUrl: string,
-    path: string,
-    ttlInSec: number,
-    secret: string,
-  ): string => {
-    const expires = Math.floor(Date.now() / 1000) + ttlInSec;
-
-    // Token generation
-    const tokenString = `${expires}${path} ${secret}`;
-    console.log("Token String:", tokenString);
-    const tokenHash = crypto.createHash("md5").update(tokenString).digest();
-    const token = Buffer.from(tokenHash)
-      .toString("base64")
-      .replace(/\n/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=/g, "");
-
-    return `${baseUrl}${path}?md5=${token}&expires=${expires}`;
-  };
-
-  useEffect(() => {
-    if (!loading) {
-      console.log("Data fetched:", data);
-      console.log(data.GetAsset.master_playlist_url);
-      let baseUrl = "https://eogwqo2k9i.gpcdn.net";
-      let path = "/videos/687bf0831dd02b49fd747726/main.m3u8";
-      let secret = ``;
-      let ttlInSec = 3600*5; // 1 hour
-      let secureUrl = generateSecureUrl(baseUrl, path, ttlInSec, secret);
-      console.log("Secure URL:", secureUrl);
-    }
-  }, [data, loading]);
 
   if (loading) {
     return (
