@@ -22,7 +22,7 @@ export class CronjobController {
     return { message: 'Cleanup completed successfully' };
   }
 
-  @Post('verify-jobs')
+  @Post('verify-bullmq-jobs')
   @ApiOperation({ summary: 'Verify and republish jobs for files with Processing or Queued status' })
   @ApiResponse({
     status: 200,
