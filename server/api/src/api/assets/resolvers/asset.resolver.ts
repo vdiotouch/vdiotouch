@@ -11,10 +11,14 @@ import { StatusDocument } from '@/src/api/assets/schemas/status.schema';
 import { GqlAuthGuard } from '@/src/api/auth/guards/gql-auth.guard';
 import { UserInfoDec } from '@/src/common/decorators/user-info.decorator';
 import { UserDocument } from '@/src/api/auth/schemas/user.schema';
+import { FileService } from '@/src/api/assets/services/file.service';
 
 @Resolver(() => Asset)
 export class AssetResolver {
-  constructor(private assetService: AssetService) {}
+  constructor(
+    private assetService: AssetService,
+    private fileService: FileService
+  ) {}
 
   @Mutation(() => CreateAssetResponse, { name: 'CreateAsset' })
   @UseGuards(GqlAuthGuard)
@@ -37,11 +41,13 @@ export class AssetResolver {
     if (!currentAsset) {
       throw new NotFoundException('Asset not found');
     }
+    let sourceFileUrl = await this.fileService.getSourceFileUrlToReProcess(currentAsset);
+
     let createdAsset = await this.assetService.create(
       {
         title: currentAsset.title,
         description: currentAsset.description,
-        source_url: currentAsset.source_url,
+        source_url: sourceFileUrl,
         tags: currentAsset.tags,
       },
       user

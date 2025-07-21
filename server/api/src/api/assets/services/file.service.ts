@@ -8,13 +8,16 @@ import { AssetDocument } from '@/src/api/assets/schemas/assets.schema';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import fs from 'fs';
 import { JobManagerService } from '@/src/api/assets/services/job-manager.service';
+import { FILE_STATUS } from 'video-touch-common/dist/constants';
+import { S3ClientService } from '@/src/common/aws/s3/s3-client.service';
 
 @Injectable()
 export class FileService {
   constructor(
     private repository: FileRepository,
     private assetService: AssetService,
-    private jobManagerService: JobManagerService
+    private jobManagerService: JobManagerService,
+    private s3ClientService: S3ClientService
   ) {}
 
   async updateFileStatus(fileId: string, status: string, details: string, size?: number) {
@@ -182,5 +185,32 @@ export class FileService {
     } catch (err) {
       console.error('Error in afterSave for file service: ', err);
     }
+  }
+
+  async getFileByType(
+    assetId: string,
+    type: string,
+    status: string = Constants.FILE_STATUS.READY
+  ): Promise<FileDocument | null> {
+    return this.repository.findOne({
+      asset_id: mongoose.Types.ObjectId(assetId),
+      type: type,
+      latest_status: status,
+    });
+  }
+
+  async getSourceFileUrlToReProcess(currentAsset: AssetDocument): Promise<string> {
+    let sourceFileUrl = currentAsset.source_url;
+
+    let sourceFile = await this.getFileByType(
+      currentAsset._id.toString(),
+      Constants.FILE_TYPE.SOURCE,
+      FILE_STATUS.READY
+    );
+    if (!sourceFile) {
+      return sourceFileUrl;
+    }
+    let path = Utils.getS3SourceFileVideoPath(currentAsset._id.toString(), sourceFile.name);
+    return this.s3ClientService.generateSignedUrlToGetObject(AppConfigService.appConfig.AWS_S3_BUCKET_NAME, path);
   }
 }
