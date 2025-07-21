@@ -68,6 +68,8 @@ export class AppConfigService {
         'MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES',
         2147483648
       ),
+      RETRY_JOB_ATTEMPT_COUNT: +this.configService.get('RETRY_JOB_ATTEMPT_COUNT', 3),
+      RETRY_JOB_BACKOFF_IN_MINUTE: +this.configService.get('RETRY_JOB_BACKOFF_IN_MINUTE', 10),
     };
   }
 }

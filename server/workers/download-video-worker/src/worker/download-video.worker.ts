@@ -32,11 +32,12 @@ export class DownloadVideoJobHandler extends WorkerHost implements OnModuleInit 
       await this.download(msg, destinationPath);
 
       this.publishUpdateAssetEvent(msg.asset_id, Constants.VIDEO_STATUS.DOWNLOADED, 'Video downloaded');
+      return Promise.resolve(null);
     } catch (e: any) {
       console.log('error in video download job handler', e);
       this.publishUpdateAssetEvent(msg.asset_id, Constants.VIDEO_STATUS.FAILED, e.message);
+      throw e;
     }
-    return Promise.resolve(null);
   }
 
   async download(msg: Models.VideoDownloadJobModel, destinationPath: string) {

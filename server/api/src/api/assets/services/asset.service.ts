@@ -18,6 +18,8 @@ import { UserDocument } from '@/src/api/auth/schemas/user.schema';
 import { Queue } from 'bullmq';
 import { InjectQueue } from '@nestjs/bullmq';
 import { CleanupService } from '@/src/api/assets/services/cleanup.service';
+import { v4 as uuidv4 } from 'uuid';
+import { minutesToMilliseconds } from '@/src/common/utils';
 
 @Injectable()
 export class AssetService {
@@ -107,9 +109,12 @@ export class AssetService {
     let downloadVideoJob = this.buildDownloadVideoJob(videoDocument);
     console.log('push download video job to ', AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE);
     return this.downloadVideoQueue.add(AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE, downloadVideoJob, {
-      jobId: videoDocument._id.toString(),
-      removeOnComplete: true,
-      removeOnFail: true,
+      jobId: uuidv4(),
+      attempts: AppConfigService.appConfig.RETRY_JOB_ATTEMPT_COUNT,
+      backoff: {
+        type: 'fixed',
+        delay: minutesToMilliseconds(AppConfigService.appConfig.RETRY_JOB_BACKOFF_IN_MINUTE),
+      },
     });
   }
 
