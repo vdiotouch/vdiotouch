@@ -1,6 +1,6 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { Asset, CreateAssetResponse, PaginatedAssetResponse } from '../models/asset.model';
-import { CreateAssetInputDto, RecreatedCreateAssetInputDto } from '../dtos/create-asset-input.dto';
+import { CreateAssetInputDto, RecreateAssetInputDto } from '../dtos/create-asset-input.dto';
 import { AssetService } from '../services/asset.service';
 import { AssetMapper } from '@/src/api/assets/mapper/asset.mapper';
 import { ListAssetInputDto } from '@/src/api/assets/dtos/list-asset-input.dto';
@@ -30,10 +30,10 @@ export class AssetResolver {
   @Mutation(() => CreateAssetResponse, { name: 'RecreateAsset' })
   @UseGuards(GqlAuthGuard)
   async recreateAsset(
-    @Args('recreatedCreateAssetInputDto') recreatedCreateAssetInputDto: RecreatedCreateAssetInputDto,
+    @Args('recreateAssetInputDto') recreateAssetInputDto: RecreateAssetInputDto,
     @UserInfoDec() user: UserDocument
   ): Promise<Asset> {
-    let currentAsset = await this.assetService.getAsset({ _id: recreatedCreateAssetInputDto._id.toString() }, user);
+    let currentAsset = await this.assetService.getAsset({ _id: recreateAssetInputDto._id.toString() }, user);
     if (!currentAsset) {
       throw new NotFoundException('Asset not found');
     }
