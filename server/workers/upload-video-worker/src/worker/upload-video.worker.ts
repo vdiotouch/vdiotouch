@@ -19,10 +19,12 @@ export class VideoUploaderJobHandler extends WorkerHost {
   async process(job: Job): Promise<any> {
     let msg: Models.VideoUploadJobModel = job.data as Models.VideoUploadJobModel;
     console.log(`uploading ${msg.height}p video`, msg.asset_id.toString());
+    let isLastAttempt = this.isLastAttempt(job);
+
     if (msg.type === Constants.FILE_TYPE.SOURCE) {
-      return this.uploadSourceFile(msg);
+      return this.uploadSourceFile(msg, isLastAttempt);
     } else {
-      return this.uploadManifestFiles(msg);
+      return this.uploadManifestFiles(msg, isLastAttempt);
     }
   }
 
@@ -46,7 +48,18 @@ export class VideoUploaderJobHandler extends WorkerHost {
     return terminal(command);
   }
 
-  async uploadManifestFiles(msg: Models.VideoUploadJobModel) {
+  isLastAttempt(job: Job): boolean {
+    console.log(`Job ${job.id} attempts made: ${job.attemptsMade}, max attempts: ${job.opts.attempts}`);
+
+    // Check if the job has been retried more than the maximum allowed attempts
+    if (job.attemptsMade + 1 >= job.opts.attempts) {
+      console.log(`Job ${job.id} has reached the maximum retry limit.`);
+      return true; // This is the last attempt
+    }
+    return false; // There are more attempts left
+  }
+
+  async uploadManifestFiles(msg: Models.VideoUploadJobModel, isLastAttempt: boolean) {
     try {
       let localFilePath = Utils.getLocalResolutionPath(
         msg.asset_id.toString(),
@@ -69,18 +82,19 @@ export class VideoUploaderJobHandler extends WorkerHost {
       this.publishUpdateFileStatusEvent(msg.file_id.toString(), 'File uploaded', dirSize, Constants.FILE_STATUS.READY);
     } catch (err: any) {
       console.log('error in uploading ', msg.height, err);
-
-      this.publishUpdateFileStatusEvent(
-        msg.file_id.toString(),
-        'File uploading failed',
-        0,
-        Constants.FILE_STATUS.FAILED,
-      );
+      if (isLastAttempt) {
+        this.publishUpdateFileStatusEvent(
+          msg.file_id.toString(),
+          'File uploading failed',
+          0,
+          Constants.FILE_STATUS.FAILED,
+        );
+      }
       throw new Error(`Error in uploading video at ${msg.height}p: ${err.message}`);
     }
   }
 
-  async uploadSourceFile(msg: Models.VideoUploadJobModel) {
+  async uploadSourceFile(msg: Models.VideoUploadJobModel, isLatAttempt: boolean) {
     try {
       let localFilePath = `${Utils.getLocalVideoRootPath(
         msg.asset_id.toString(),
@@ -99,12 +113,14 @@ export class VideoUploaderJobHandler extends WorkerHost {
     } catch (err: any) {
       console.log('error in uploading source file', err);
 
-      this.publishUpdateFileStatusEvent(
-        msg.file_id.toString(),
-        'Source file uploading failed',
-        0,
-        Constants.FILE_STATUS.FAILED,
-      );
+      if (isLatAttempt) {
+        this.publishUpdateFileStatusEvent(
+          msg.file_id.toString(),
+          'Source file uploading failed',
+          0,
+          Constants.FILE_STATUS.FAILED,
+        );
+      }
       throw new Error(`Error in uploading source file: ${err.message}`);
     }
   }

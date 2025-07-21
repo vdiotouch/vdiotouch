@@ -15,6 +15,7 @@ export class ValidateVideoWorker extends WorkerHost {
   async process(job: Job): Promise<any> {
     console.log('VideoValidationJobHandler', job);
     let msg: Models.VideoValidationJobModel = job.data as Models.VideoValidationJobModel;
+
     try {
       let videoPath = Utils.getLocalVideoMp4Path(
         msg.asset_id.toString(),
@@ -45,9 +46,23 @@ export class ValidateVideoWorker extends WorkerHost {
       this.publishUpdateAssetStatusEvent(msg.asset_id, Constants.VIDEO_STATUS.VALIDATED, 'Video validated');
     } catch (e: any) {
       console.log('error in video validation job handler', e);
-      this.publishUpdateAssetStatusEvent(msg.asset_id, Constants.VIDEO_STATUS.FAILED, e.message);
+      let isLastAttempt = this.isLastAttempt(job);
+      if (isLastAttempt) {
+        this.publishUpdateAssetStatusEvent(msg.asset_id, Constants.VIDEO_STATUS.FAILED, e.message);
+      }
       throw new Error('Error in video validation job handler: ' + e.message);
     }
+  }
+
+  isLastAttempt(job: Job): boolean {
+    console.log(`Job ${job.id} attempts made: ${job.attemptsMade}, max attempts: ${job.opts.attempts}`);
+
+    // Check if the job has been retried more than the maximum allowed attempts
+    if (job.attemptsMade + 1 >= job.opts.attempts) {
+      console.log(`Job ${job.id} has reached the maximum retry limit.`);
+      return true; // This is the last attempt
+    }
+    return false; // There are more attempts left
   }
 
   async getMetadata(url: string): Promise<{
