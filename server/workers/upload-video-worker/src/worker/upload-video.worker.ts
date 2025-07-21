@@ -76,6 +76,7 @@ export class VideoUploaderJobHandler extends WorkerHost {
         0,
         Constants.FILE_STATUS.FAILED,
       );
+      throw new Error(`Error in uploading video at ${msg.height}p: ${err.message}`);
     }
   }
 
@@ -104,6 +105,7 @@ export class VideoUploaderJobHandler extends WorkerHost {
         0,
         Constants.FILE_STATUS.FAILED,
       );
+      throw new Error(`Error in uploading source file: ${err.message}`);
     }
   }
 

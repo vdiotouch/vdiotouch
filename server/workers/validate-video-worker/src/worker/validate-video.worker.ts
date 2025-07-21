@@ -46,8 +46,8 @@ export class ValidateVideoWorker extends WorkerHost {
     } catch (e: any) {
       console.log('error in video validation job handler', e);
       this.publishUpdateAssetStatusEvent(msg.asset_id, Constants.VIDEO_STATUS.FAILED, e.message);
+      throw new Error('Error in video validation job handler: ' + e.message);
     }
-    return Promise.resolve(null);
   }
 
   async getMetadata(url: string): Promise<{

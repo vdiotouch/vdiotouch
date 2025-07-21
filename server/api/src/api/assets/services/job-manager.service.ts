@@ -7,6 +7,8 @@ import { JobMetadataModel } from 'video-touch-common/dist/models';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { v4 as uuidv4 } from 'uuid';
+import { minutesToMilliseconds } from '@/src/common/utils';
+import { AssetDocument } from '@/src/api/assets/schemas/assets.schema';
 
 @Injectable()
 export class JobManagerService {
@@ -17,7 +19,9 @@ export class JobManagerService {
     @InjectQueue('process_video_720p') private videoProcessQueue720p: Queue,
     @InjectQueue('process_video_1080p') private videoProcessQueue1080p: Queue,
     @InjectQueue('thumbnail-generation') private thumbnailGenerationQueue: Queue,
-    @InjectQueue('upload-video') private videoUploadQueue: Queue
+    @InjectQueue('upload-video') private videoUploadQueue: Queue,
+    @InjectQueue('validate-video') private validateVideoQueue: Queue,
+    @InjectQueue('download-video') private downloadVideoQueue: Queue
   ) {}
 
   async getThumbnailJobByJobId(jobId: string): Promise<Models.ThumbnailGenerationJobModel | null> {
@@ -139,22 +143,47 @@ export class JobManagerService {
     if (jobModel.height === 360) {
       return this.videoProcessQueue360p.add(jobModel.processRoutingKey, jobModel, {
         jobId: uuidv4(),
+        attempts: AppConfigService.appConfig.RETRY_JOB_ATTEMPT_COUNT,
+        backoff: {
+          type: 'fixed',
+          delay: minutesToMilliseconds(AppConfigService.appConfig.RETRY_JOB_BACKOFF_IN_MINUTE),
+        },
       });
     } else if (jobModel.height === 480) {
       return this.videoProcessQueue480p.add(jobModel.processRoutingKey, jobModel, {
         jobId: uuidv4(),
+        attempts: AppConfigService.appConfig.RETRY_JOB_ATTEMPT_COUNT,
+        backoff: {
+          type: 'fixed',
+          delay: minutesToMilliseconds(AppConfigService.appConfig.RETRY_JOB_BACKOFF_IN_MINUTE),
+        },
       });
     } else if (jobModel.height === 540) {
       return this.videoProcessQueue540p.add(jobModel.processRoutingKey, jobModel, {
         jobId: uuidv4(),
+        attempts: AppConfigService.appConfig.RETRY_JOB_ATTEMPT_COUNT,
+        backoff: {
+          type: 'fixed',
+          delay: minutesToMilliseconds(AppConfigService.appConfig.RETRY_JOB_BACKOFF_IN_MINUTE),
+        },
       });
     } else if (jobModel.height === 720) {
       return this.videoProcessQueue720p.add(jobModel.processRoutingKey, jobModel, {
         jobId: uuidv4(),
+        attempts: AppConfigService.appConfig.RETRY_JOB_ATTEMPT_COUNT,
+        backoff: {
+          type: 'fixed',
+          delay: minutesToMilliseconds(AppConfigService.appConfig.RETRY_JOB_BACKOFF_IN_MINUTE),
+        },
       });
     } else if (jobModel.height === 1080) {
       return this.videoProcessQueue1080p.add(jobModel.processRoutingKey, jobModel, {
         jobId: uuidv4(),
+        attempts: AppConfigService.appConfig.RETRY_JOB_ATTEMPT_COUNT,
+        backoff: {
+          type: 'fixed',
+          delay: minutesToMilliseconds(AppConfigService.appConfig.RETRY_JOB_BACKOFF_IN_MINUTE),
+        },
       });
     }
     return null;
@@ -170,6 +199,11 @@ export class JobManagerService {
       thumbnailGenerationJob,
       {
         jobId: uuidv4(),
+        attempts: AppConfigService.appConfig.RETRY_JOB_ATTEMPT_COUNT,
+        backoff: {
+          type: 'fixed',
+          delay: minutesToMilliseconds(AppConfigService.appConfig.RETRY_JOB_BACKOFF_IN_MINUTE),
+        },
       }
     );
   }
@@ -186,6 +220,42 @@ export class JobManagerService {
     console.log('publishing source file upload job for ', uploadJob);
     return this.videoUploadQueue.add(AppConfigService.appConfig.BULL_UPLOAD_JOB_QUEUE, uploadJob, {
       jobId: uuidv4(),
+      attempts: AppConfigService.appConfig.RETRY_JOB_ATTEMPT_COUNT,
+      backoff: {
+        type: 'fixed',
+        delay: minutesToMilliseconds(AppConfigService.appConfig.RETRY_JOB_BACKOFF_IN_MINUTE),
+      },
     });
+  }
+
+  async pushValidateVideoJob(assetId: string) {
+    let validateVideoJob = this.buildValidateVideoJob(assetId);
+    return this.validateVideoQueue.add(AppConfigService.appConfig.BULL_VALIDATE_JOB_QUEUE, validateVideoJob);
+  }
+
+  private buildDownloadVideoJob(videoDocument: AssetDocument): Models.VideoDownloadJobModel {
+    return {
+      asset_id: videoDocument._id.toString(),
+      source_url: videoDocument.source_url,
+    };
+  }
+
+  async pushDownloadVideoJob(videoDocument: AssetDocument) {
+    let downloadVideoJob = this.buildDownloadVideoJob(videoDocument);
+    console.log('push download video job to ', AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE);
+    return this.downloadVideoQueue.add(AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE, downloadVideoJob, {
+      jobId: uuidv4(),
+      attempts: AppConfigService.appConfig.RETRY_JOB_ATTEMPT_COUNT,
+      backoff: {
+        type: 'fixed',
+        delay: minutesToMilliseconds(AppConfigService.appConfig.RETRY_JOB_BACKOFF_IN_MINUTE),
+      },
+    });
+  }
+
+  private buildValidateVideoJob(assetId: string): Models.VideoValidationJobModel {
+    return {
+      asset_id: assetId,
+    };
   }
 }

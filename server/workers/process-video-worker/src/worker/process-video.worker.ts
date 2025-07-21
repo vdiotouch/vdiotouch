@@ -25,7 +25,6 @@ export class ProcessVideoWorker extends WorkerHost {
 
     let { height, width } = msg;
     await this.processVideo(msg, height, width);
-    return new Promise(null);
   }
 
   async processVideo(msg: Models.VideoProcessingJobModel, height: number, width: number) {
@@ -45,6 +44,7 @@ export class ProcessVideoWorker extends WorkerHost {
       console.log(`error while processing ${height}p`, e);
 
       this.publishUpdateFileStatusEvent(msg.file_id.toString(), e.message, 0, Constants.FILE_STATUS.FAILED);
+      throw new Error(`Error while processing video at ${height}p: ${e.message}`);
     }
   }
 

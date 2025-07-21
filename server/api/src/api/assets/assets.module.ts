@@ -43,7 +43,6 @@ import { JobVerificationService } from '@/src/api/assets/services/job-verificati
           name: AppConfigService.appConfig.BULL_360P_PROCESS_VIDEO_JOB_QUEUE,
           defaultJobOptions: {
             removeOnComplete: true,
-            removeOnFail: true,
           },
         }),
       },
@@ -54,7 +53,6 @@ import { JobVerificationService } from '@/src/api/assets/services/job-verificati
           name: AppConfigService.appConfig.BULL_480P_PROCESS_VIDEO_JOB_QUEUE,
           defaultJobOptions: {
             removeOnComplete: true,
-            removeOnFail: true,
           },
         }),
       },
@@ -65,7 +63,6 @@ import { JobVerificationService } from '@/src/api/assets/services/job-verificati
           name: AppConfigService.appConfig.BULL_540P_PROCESS_VIDEO_JOB_QUEUE,
           defaultJobOptions: {
             removeOnComplete: true,
-            removeOnFail: true,
           },
         }),
       },
@@ -76,7 +73,6 @@ import { JobVerificationService } from '@/src/api/assets/services/job-verificati
           name: AppConfigService.appConfig.BULL_720P_PROCESS_VIDEO_JOB_QUEUE,
           defaultJobOptions: {
             removeOnComplete: true,
-            removeOnFail: true,
           },
         }),
       },
@@ -87,7 +83,6 @@ import { JobVerificationService } from '@/src/api/assets/services/job-verificati
           name: AppConfigService.appConfig.BULL_1080P_PROCESS_VIDEO_JOB_QUEUE,
           defaultJobOptions: {
             removeOnComplete: true,
-            removeOnFail: true,
           },
         }),
       },
@@ -98,7 +93,6 @@ import { JobVerificationService } from '@/src/api/assets/services/job-verificati
           name: AppConfigService.appConfig.BULL_VALIDATE_JOB_QUEUE,
           defaultJobOptions: {
             removeOnComplete: true,
-            removeOnFail: true,
           },
         }),
       },
@@ -109,7 +103,6 @@ import { JobVerificationService } from '@/src/api/assets/services/job-verificati
           name: AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE,
           defaultJobOptions: {
             removeOnComplete: true,
-            removeOnFail: true,
           },
         }),
       },
@@ -120,7 +113,6 @@ import { JobVerificationService } from '@/src/api/assets/services/job-verificati
           name: AppConfigService.appConfig.BULL_THUMBNAIL_GENERATION_JOB_QUEUE,
           defaultJobOptions: {
             removeOnComplete: true,
-            removeOnFail: true,
           },
         }),
       },

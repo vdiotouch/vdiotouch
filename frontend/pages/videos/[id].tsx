@@ -88,7 +88,7 @@ const VideoDetailsPage: NextPage = () => {
                     <div className="text-center">
                       <AlertCircle className="h-12 w-12 mx-auto mb-2" />
                       <p className="text-lg">Video is not ready yet</p>
-                      <Badge className="mt-2" variant="outline">
+                      <Badge className="mt-2 text-white" variant="outline">
                         {videoDetails.latest_status}
                       </Badge>
                     </div>
