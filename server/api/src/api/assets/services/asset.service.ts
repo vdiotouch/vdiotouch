@@ -5,21 +5,16 @@ import { AssetRepository } from '@/src/api/assets/repositories/asset.repository'
 import { ListAssetInputDto } from '@/src/api/assets/dtos/list-asset-input.dto';
 import { GetAssetInputDto } from '@/src/api/assets/dtos/get-asset-input.dto';
 import { UpdateAssetInputDto } from '@/src/api/assets/dtos/update-asset-input.dto';
-import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import mongoose from 'mongoose';
 import { FileRepository } from '@/src/api/assets/repositories/file.repository';
 import { AssetMapper } from '@/src/api/assets/mapper/asset.mapper';
 import { JobManagerService } from '@/src/api/assets/services/job-manager.service';
 import { FileMapper } from '@/src/api/assets/mapper/file.mapper';
-import { Constants, Models, Utils } from 'video-touch-common';
+import { Constants, Utils } from 'video-touch-common';
 import { HeightWidthMap } from '@/src/api/assets/models/file.model';
 import { FileDocument } from '@/src/api/assets/schemas/files.schema';
 import { UserDocument } from '@/src/api/auth/schemas/user.schema';
-import { Queue } from 'bullmq';
-import { InjectQueue } from '@nestjs/bullmq';
 import { CleanupService } from '@/src/api/assets/services/cleanup.service';
-import { v4 as uuidv4 } from 'uuid';
-import { minutesToMilliseconds } from '@/src/common/utils';
 
 @Injectable()
 export class AssetService {
@@ -27,8 +22,6 @@ export class AssetService {
     private repository: AssetRepository,
     private fileRepository: FileRepository,
     private jobManagerService: JobManagerService,
-    @InjectQueue('validate-video') private validateVideoQueue: Queue,
-    @InjectQueue('download-video') private downloadVideoQueue: Queue,
     private cleanUpService: CleanupService
   ) {}
 
@@ -100,42 +93,6 @@ export class AssetService {
     );
   }
 
-  async pushDownloadVideoJob(videoDocument: AssetDocument) {
-    await this.updateAssetStatus(
-      videoDocument._id.toString(),
-      Constants.VIDEO_STATUS.DOWNLOADING,
-      'Downloading assets'
-    );
-    let downloadVideoJob = this.buildDownloadVideoJob(videoDocument);
-    console.log('push download video job to ', AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE);
-    return this.downloadVideoQueue.add(AppConfigService.appConfig.BULL_DOWNLOAD_JOB_QUEUE, downloadVideoJob, {
-      jobId: uuidv4(),
-      attempts: AppConfigService.appConfig.RETRY_JOB_ATTEMPT_COUNT,
-      backoff: {
-        type: 'fixed',
-        delay: minutesToMilliseconds(AppConfigService.appConfig.RETRY_JOB_BACKOFF_IN_MINUTE),
-      },
-    });
-  }
-
-  async pushValidateVideoJob(assetId: string) {
-    let validateVideoJob = this.buildValidateVideoJob(assetId);
-    return this.validateVideoQueue.add(AppConfigService.appConfig.BULL_VALIDATE_JOB_QUEUE, validateVideoJob);
-  }
-
-  private buildDownloadVideoJob(videoDocument: AssetDocument): Models.VideoDownloadJobModel {
-    return {
-      asset_id: videoDocument._id.toString(),
-      source_url: videoDocument.source_url,
-    };
-  }
-
-  private buildValidateVideoJob(assetId: string): Models.VideoValidationJobModel {
-    return {
-      asset_id: assetId,
-    };
-  }
-
   async checkForDeleteLocalAssetFile(assetId: string) {
     console.log('checking for ', assetId);
     let files = await this.fileRepository.find({
@@ -179,7 +136,8 @@ export class AssetService {
       updatedAsset.latest_status === Constants.VIDEO_STATUS.UPLOADED
     ) {
       console.log('pushing validate assets job 1 ...');
-      this.pushValidateVideoJob(updatedAsset._id.toString())
+      this.jobManagerService
+        .pushValidateVideoJob(updatedAsset._id.toString())
         .then(() => {
           console.log('pushed validate assets job');
         })
@@ -194,7 +152,7 @@ export class AssetService {
     }
     if (updatedAsset.latest_status === Constants.VIDEO_STATUS.VALIDATED) {
       let heightWidthMapByHeight = this.jobManagerService.getAllHeightWidthMapByHeight(updatedAsset.height);
-      await this.insertMenifestFilesData(updatedAsset._id.toString(), heightWidthMapByHeight);
+      await this.insertManifestFilesData(updatedAsset._id.toString(), heightWidthMapByHeight);
       await this.createThumbnailFile(updatedAsset._id.toString(), updatedAsset.height, updatedAsset.width);
       await this.createSourceFile(
         updatedAsset._id.toString(),
@@ -213,8 +171,9 @@ export class AssetService {
       return;
     }
     try {
-      let job = await this.pushDownloadVideoJob(doc);
+      let job = await this.jobManagerService.pushDownloadVideoJob(doc);
       console.log('pushed download assets job', job.id);
+      await this.updateAssetStatus(doc._id.toString(), Constants.VIDEO_STATUS.DOWNLOADING, 'Downloading assets');
       await this.repository.findOneAndUpdate(
         {
           _id: mongoose.Types.ObjectId(doc._id.toString()),
@@ -233,7 +192,7 @@ export class AssetService {
     }
   }
 
-  async insertMenifestFilesData(assetId: string, heightWidthMaps: HeightWidthMap[]) {
+  async insertManifestFilesData(assetId: string, heightWidthMaps: HeightWidthMap[]) {
     let files: FileDocument[] = [];
     for (let data of heightWidthMaps) {
       let newFiles = await this.createPlaylistFileAfterValidation(assetId, data.height, data.width);
