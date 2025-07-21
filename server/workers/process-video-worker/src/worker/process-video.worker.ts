@@ -22,12 +22,24 @@ export class ProcessVideoWorker extends WorkerHost {
   async process(job: Job): Promise<any> {
     let msg: Models.VideoProcessingJobModel = job.data as Models.VideoProcessingJobModel;
     console.log('VideoProcessingJobHandler', msg);
+    let isLastAttempt = this.isLastAttempt(job);
 
     let { height, width } = msg;
-    await this.processVideo(msg, height, width);
+    await this.processVideo(msg, height, width, isLastAttempt);
   }
 
-  async processVideo(msg: Models.VideoProcessingJobModel, height: number, width: number) {
+  isLastAttempt(job: Job): boolean {
+    console.log(`Job ${job.id} attempts made: ${job.attemptsMade}, max attempts: ${job.opts.attempts}`);
+
+    // Check if the job has been retried more than the maximum allowed attempts
+    if (job.attemptsMade + 1 >= job.opts.attempts) {
+      console.log(`Job ${job.id} has reached the maximum retry limit.`);
+      return true; // This is the last attempt
+    }
+    return false; // There are more attempts left
+  }
+
+  async processVideo(msg: Models.VideoProcessingJobModel, height: number, width: number, isLastAttempt: boolean) {
     try {
       this.publishUpdateFileStatusEvent(
         msg.file_id.toString(),
@@ -43,7 +55,9 @@ export class ProcessVideoWorker extends WorkerHost {
     } catch (e: any) {
       console.log(`error while processing ${height}p`, e);
 
-      this.publishUpdateFileStatusEvent(msg.file_id.toString(), e.message, 0, Constants.FILE_STATUS.FAILED);
+      if (isLastAttempt) {
+        this.publishUpdateFileStatusEvent(msg.file_id.toString(), e.message, 0, Constants.FILE_STATUS.FAILED);
+      }
       throw new Error(`Error while processing video at ${height}p: ${e.message}`);
     }
   }
