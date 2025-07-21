@@ -118,7 +118,7 @@ export const UPDATE_ASSET_MUTATION = gql`
 `;
 export const RECREATE_ASSET_MUTATION = gql`
   mutation ($id: String!) {
-    RecreateAsset(recreatedCreateAssetInputDto: { _id: $id }) {
+    RecreateAsset(recreateAssetInputDto: { _id: $id }) {
       _id
       title
     }
