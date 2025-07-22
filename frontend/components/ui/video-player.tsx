@@ -20,6 +20,7 @@ const PlyrHlsPlayer = ({
   ): string => {
     // Parse the URL to extract baseUrl and path
     const url = new URL(fullUrl);
+    let version = url.searchParams.get("v");
     const baseUrl = `${url.protocol}//${url.host}`;
     const path = url.pathname;
 
@@ -36,7 +37,11 @@ const PlyrHlsPlayer = ({
       .replace(/\//g, "_")
       .replace(/=/g, "");
 
-    return `${baseUrl}${path}?md5=${token}&expires=${expires}`;
+    let finalUrl = `${baseUrl}${path}?v=4&md5=${token}&expires=${expires}`;
+    if (version) {
+      finalUrl += `&v=${version}`;
+    }
+    return finalUrl;
   };
 
   useEffect(() => {
