@@ -18,16 +18,19 @@ const PlyrHlsPlayer = ({
     ttlInSec: number,
     secret: string,
   ): string => {
+    console.log('Generating secure URL for:', fullUrl);
     // Parse the URL to extract baseUrl and path
     const url = new URL(fullUrl);
     let version = url.searchParams.get("v");
-    const baseUrl = `${url.protocol}//${url.host}`;
-    const path = url.pathname;
+
+    const fullPath = url.pathname;
+    const dirPath = fullPath.substring(0, fullPath.lastIndexOf("/") + 1); // keep trailing slash
+    console.log("dirPath", dirPath);
 
     const expires = Math.floor(Date.now() / 1000) + ttlInSec;
 
     // Token generation
-    const tokenString = `${expires}${path} ${secret}`;
+    const tokenString = `${expires}${dirPath} ${secret}`;
     console.log("Token String:", tokenString);
     const tokenHash = crypto.createHash("md5").update(tokenString).digest();
     const token = Buffer.from(tokenHash)
@@ -37,11 +40,11 @@ const PlyrHlsPlayer = ({
       .replace(/\//g, "_")
       .replace(/=/g, "");
 
-    let finalUrl = `${baseUrl}${path}?v=4&md5=${token}&expires=${expires}`;
-    if (version) {
-      finalUrl += `&v=${version}`;
+    if(version){
+      // If version is present, append it to the path
+      return `${url.origin}${fullPath}?v=${version}&md5=${token}&expires=${expires}`;
     }
-    return finalUrl;
+    return `${url.origin}${fullPath}?md5=${token}&expires=${expires}`;
   };
 
   useEffect(() => {
