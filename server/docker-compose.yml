@@ -6,9 +6,6 @@ services:
       dockerfile: Dockerfile
     container_name: video-touch-api
     env_file: .env
-    depends_on:
-      - redis
-      - rabbitmq
     environment:
       - PORT=$API_PORT
     ports:
@@ -30,8 +27,6 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
-      - rabbitmq
-      - redis
     environment:
       - DOWNLOAD_VIDEO_WORKER_PORT=$DOWNLOAD_VIDEO_WORKER_PORT
     volumes:
@@ -49,8 +44,6 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
-      - rabbitmq
-      - redis
     environment:
       - VALIDATE_VIDEO_WORKER_PORT=$VALIDATE_VIDEO_WORKER_PORT
     volumes:
@@ -69,8 +62,6 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
-      - rabbitmq
-      - redis
     environment:
       - THUMBNAIL_WORKER_PORT=$THUMBNAIL_WORKER_PORT
     volumes:
@@ -89,8 +80,6 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
-      - rabbitmq
-      - redis
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_360P_PROCESS_VIDEO_JOB_QUEUE
@@ -112,8 +101,6 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
-      - rabbitmq
-      - redis
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_480P_PROCESS_VIDEO_JOB_QUEUE
@@ -134,8 +121,6 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
-      - rabbitmq
-      - redis
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_720P_PROCESS_VIDEO_JOB_QUEUE
@@ -156,8 +141,6 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
-      - rabbitmq
-      - redis
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_1080P_PROCESS_VIDEO_JOB_QUEUE
@@ -179,8 +162,6 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
-      - rabbitmq
-      - redis
     environment:
       - UPLOAD_VIDEO_WORKER_PORT=$UPLOAD_VIDEO_WORKER_PORT
     volumes:
