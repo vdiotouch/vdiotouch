@@ -52,6 +52,16 @@ type PaginatedAssetResponse {
   page_info: PageInfo!
 }
 
+type PlaylistSignedUrlResponse {
+  main_playlist_url: String!
+  resolutions_token: JSON!
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
 type File {
   _id: String!
   height: Float!
@@ -75,6 +85,7 @@ type User {
 type Query {
   ListAsset(listAssetInputDto: ListAssetInputDto!): PaginatedAssetResponse!
   GetAsset(getAssetInputDto: GetAssetInputDto!): Asset!
+  GetAssetMasterPlaylistSignedUrl(_id: String!): PlaylistSignedUrlResponse!
   user: User
 }
 
@@ -90,7 +101,7 @@ input GetAssetInputDto {
 
 type Mutation {
   CreateAsset(createAssetInput: CreateAssetInputDto!): CreateAssetResponse!
-  RecreateAsset(recreatedCreateAssetInputDto: RecreatedCreateAssetInputDto!): CreateAssetResponse!
+  RecreateAsset(recreateAssetInputDto: RecreateAssetInputDto!): CreateAssetResponse!
   UpdateAsset(_id: String!, updateAssetInputDto: UpdateAssetInputDto!): Asset!
   DeleteAsset(_id: String!): String!
 }
@@ -102,7 +113,7 @@ input CreateAssetInputDto {
   tags: [String!]
 }
 
-input RecreatedCreateAssetInputDto {
+input RecreateAssetInputDto {
   _id: String
 }
 

@@ -52,6 +52,7 @@
     "express-basic-auth": "^1.2.1",
     "graphql": "16.8.1",
     "graphql-subscriptions": "^2.0.0",
+    "graphql-type-json": "^0.3.2",
     "mongoose": "^5.13.2",
     "morgan": "^1.10.0",
     "mv": "^2.1.1",
