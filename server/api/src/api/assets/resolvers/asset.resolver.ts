@@ -1,5 +1,5 @@
 import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
-import { Asset, CreateAssetResponse, PaginatedAssetResponse } from '../models/asset.model';
+import { Asset, CreateAssetResponse, PaginatedAssetResponse, PlaylistSignedUrlResponse } from '../models/asset.model';
 import { CreateAssetInputDto, RecreateAssetInputDto } from '../dtos/create-asset-input.dto';
 import { AssetService } from '../services/asset.service';
 import { AssetMapper } from '@/src/api/assets/mapper/asset.mapper';
@@ -15,10 +15,7 @@ import { FileService } from '@/src/api/assets/services/file.service';
 
 @Resolver(() => Asset)
 export class AssetResolver {
-  constructor(
-    private assetService: AssetService,
-    private fileService: FileService
-  ) {}
+  constructor(private assetService: AssetService, private fileService: FileService) {}
 
   @Mutation(() => CreateAssetResponse, { name: 'CreateAsset' })
   @UseGuards(GqlAuthGuard)
@@ -109,5 +106,21 @@ export class AssetResolver {
     let statusLogs = AssetMapper.toStatusLogsResponse(asset.status_logs as [StatusDocument]);
 
     return AssetMapper.toAssetResponse(asset, statusLogs);
+  }
+
+  @UseGuards(GqlAuthGuard)
+  @Query(() => PlaylistSignedUrlResponse, { name: 'GetAssetMasterPlaylistSignedUrl' })
+  async getAssetPlaylistSignedUrl(
+    @Args('_id') id: string,
+    @UserInfoDec() user: UserDocument
+  ): Promise<{
+    main_playlist_url: string;
+    resolutions_token: Record<string, string>;
+  }> {
+    let asset = await this.assetService.getAsset({ _id: id }, user);
+    if (!asset) {
+      throw new NotFoundException('Asset not found');
+    }
+    return this.assetService.getMasterPlaylistSignedUrl(asset);
   }
 }

@@ -31,6 +31,7 @@ import { BullBoardModule } from '@bull-board/nestjs';
 import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 import { CronjobController } from '@/src/api/assets/controllers/cronjob.controller';
 import { JobVerificationService } from '@/src/api/assets/services/job-verification.service';
+import { SignedUrlGeneratorService } from '@/src/api/assets/services/signed-url-generator.service';
 
 @Module({
   imports: [
@@ -264,6 +265,7 @@ import { JobVerificationService } from '@/src/api/assets/services/job-verificati
     FilesByAssetLoader,
     CleanupService,
     JobVerificationService,
+    SignedUrlGeneratorService,
   ],
 })
 export class AssetsModule {}

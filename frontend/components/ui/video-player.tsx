@@ -2,50 +2,18 @@ import React, { useEffect, useRef } from "react";
 import Plyr from "plyr";
 import Hls from "hls.js";
 import crypto from "crypto";
+import { PlaylistSignedUrlResponse } from "@/api/graphql/types/video-details";
 
 const PlyrHlsPlayer = ({
-  source,
+  playlistSignedUrlResponse,
   thumbnailUrl,
 }: {
-  source: string;
+  playlistSignedUrlResponse: PlaylistSignedUrlResponse;
   thumbnailUrl: string;
 }) => {
+  console.log("source", playlistSignedUrlResponse.main_playlist_url);
   const videoRef = useRef(null);
   const hlsRef = useRef(null);
-
-  const generateSecureUrl = (
-    fullUrl: string,
-    ttlInSec: number,
-    secret: string,
-  ): string => {
-    console.log('Generating secure URL for:', fullUrl);
-    // Parse the URL to extract baseUrl and path
-    const url = new URL(fullUrl);
-    let version = url.searchParams.get("v");
-
-    const fullPath = url.pathname;
-    const dirPath = fullPath.substring(0, fullPath.lastIndexOf("/") + 1); // keep trailing slash
-    console.log("dirPath", dirPath);
-
-    const expires = Math.floor(Date.now() / 1000) + ttlInSec;
-
-    // Token generation
-    const tokenString = `${expires}${dirPath} ${secret}`;
-    console.log("Token String:", tokenString);
-    const tokenHash = crypto.createHash("md5").update(tokenString).digest();
-    const token = Buffer.from(tokenHash)
-      .toString("base64")
-      .replace(/\n/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=/g, "");
-
-    if(version){
-      // If version is present, append it to the path
-      return `${url.origin}${fullPath}?v=${version}&md5=${token}&expires=${expires}`;
-    }
-    return `${url.origin}${fullPath}?md5=${token}&expires=${expires}`;
-  };
 
   useEffect(() => {
     const defaultOptions = {
@@ -68,12 +36,20 @@ const PlyrHlsPlayer = ({
                 context.url &&
                 context.url.match(/\.m3u8($|\?)/i)
               ) {
+                console.log("context.url", context.url);
+                for (let playlistResponse of Object.keys(
+                  playlistSignedUrlResponse.resolutions_token,
+                )) {
+                  if (context.url.includes(playlistResponse)) {
+                    // Generate a secure URL using the token
+                    const token =
+                      playlistSignedUrlResponse.resolutions_token[
+                        playlistResponse
+                      ];
+                    context.url = `${context.url}?${token}`;
+                  }
+                }
                 // Use the generateSecuredUrl function we defined above
-                context.url = generateSecureUrl(
-                  context.url,
-                  3600 * 5,
-                  process.env.NEXT_PUBLIC_GOTIPATH_SECRET as any,
-                );
               }
               return originalLoad(context, config, callbacks);
             };
@@ -82,7 +58,7 @@ const PlyrHlsPlayer = ({
       });
       // @ts-ignore
       hlsRef.current = hls;
-      hls.loadSource(source);
+      hls.loadSource(playlistSignedUrlResponse.main_playlist_url);
 
       hls.on(Hls.Events.MANIFEST_PARSED, function (event, data) {
         const availableQualities = hls.levels.map((l) => l.height);

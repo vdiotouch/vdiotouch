@@ -1,8 +1,14 @@
 import Data from "@/components/ui/data";
 import { useRouter } from "next/router";
 import { useQuery } from "@apollo/client";
-import { GET_ASSET_QUERY } from "@/api/graphql/queries/query";
-import { VideoDetails } from "@/api/graphql/types/video-details";
+import {
+  GET_ASSET_QUERY,
+  GET_ASSET_MASTER_PLAYLIST_SIGNED_URL,
+} from "@/api/graphql/queries/query";
+import {
+  PlaylistSignedUrlResponse,
+  VideoDetails,
+} from "@/api/graphql/types/video-details";
 import { bytesToMegaBytes, secondsToHHMMSS } from "@/lib/utils";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,7 +21,6 @@ import VideoFilesComponent from "@/components/ui/video-files-component";
 import { NextPage } from "next";
 import PrivateRoute from "@/components/private-route";
 import React, { useEffect } from "react";
-import * as crypto from "crypto";
 
 const PlyrHlsPlayer = dynamic(() => import("@/components/ui/video-player"), {
   ssr: false,
@@ -38,59 +43,21 @@ const VideoDetailsPage: NextPage = () => {
     },
     fetchPolicy: "network-only", // Force network request on each page load, don't use cache
   });
-  
+
+  // Query for getting the signed URL from the server
+  const { data: signedUrlData, loading: signedUrlLoading } = useQuery(
+    GET_ASSET_MASTER_PLAYLIST_SIGNED_URL,
+    {
+      variables: {
+        id: id,
+      },
+      skip: !data?.GetAsset, // Skip this query until the asset data is available
+      fetchPolicy: "network-only", // Force network request on each page load, don't use cache
+    },
+  );
   // State for storing the signed URL
-  const [signedUrl, setSignedUrl] = React.useState<string | null>(null);
-  
-  const generateSecureUrl = (
-    fullUrl: string,
-    ttlInSec: number,
-    secret: string,
-  ): string => {
-    console.log("Generating secure URL for:", fullUrl);
-    // Parse the URL to extract baseUrl and path
-    const url = new URL(fullUrl);
-    let version = url.searchParams.get("v");
 
-    const fullPath = url.pathname;
-    const dirPath = fullPath.substring(0, fullPath.lastIndexOf("/") + 1); // keep trailing slash
-    console.log("dirPath", dirPath);
-
-    const expires = Math.floor(Date.now() / 1000) + ttlInSec;
-
-    // Token generation
-    const tokenString = `${expires}${dirPath} ${secret}`;
-    console.log("Token String:", tokenString);
-    const tokenHash = crypto.createHash("md5").update(tokenString).digest();
-    const token = Buffer.from(tokenHash)
-      .toString("base64")
-      .replace(/\n/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_")
-      .replace(/=/g, "");
-
-    if (version) {
-      // If version is present, append it to the path
-      return `${url.origin}${fullPath}?v=${version}&md5=${token}&expires=${expires}`;
-    }
-    return `${url.origin}${fullPath}?md5=${token}&expires=${expires}`;
-  };
-  
-  // Generate signed URL when data is available
-  useEffect(() => {
-    if (data && data.GetAsset && data.GetAsset.master_playlist_url) {
-      const masterPlaylistUrl = data.GetAsset.master_playlist_url;
-      setSignedUrl(
-        generateSecureUrl(
-          masterPlaylistUrl,
-          3600,
-          process.env.NEXT_PUBLIC_GOTIPATH_SECRET as any,
-        ),
-      );
-    }
-  }, [data]);
-
-  if (loading) {
+  if (loading || signedUrlLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="flex flex-col items-center space-y-4">
@@ -116,7 +83,8 @@ const VideoDetailsPage: NextPage = () => {
   }
 
   let videoDetails: VideoDetails = data.GetAsset;
-  const masterPlaylistUrl = videoDetails.master_playlist_url;
+  let playlistSignedUrlResponse: PlaylistSignedUrlResponse =
+    signedUrlData?.GetAssetMasterPlaylistSignedUrl;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -129,9 +97,9 @@ const VideoDetailsPage: NextPage = () => {
             </CardHeader>
             <CardContent>
               <div className="mt-4 rounded-lg overflow-hidden shadow-md">
-                {signedUrl ? (
+                {playlistSignedUrlResponse ? (
                   <PlyrHlsPlayer
-                    source={signedUrl}
+                    playlistSignedUrlResponse={playlistSignedUrlResponse}
                     thumbnailUrl={videoDetails.thumbnail_url}
                   />
                 ) : (
@@ -229,5 +197,4 @@ const VideoDetailsPage: NextPage = () => {
     </div>
   );
 };
-
 export default PrivateRoute({ Component: VideoDetailsPage });

@@ -57,4 +57,5 @@ export interface EnvironmentVariables {
   MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES: number;
   RETRY_JOB_ATTEMPT_COUNT: number;
   RETRY_JOB_BACKOFF_IN_MINUTE: number;
+  GOTIPATH_CDN_SECRET: string;
 }
