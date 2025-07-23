@@ -1,10 +1,31 @@
 version: "3.7"
 services:
+  redis:
+    image: redis:latest
+    container_name: redis
+    command: >
+      redis-server 
+      --replicaof no one
+      --maxmemory-policy noeviction
+      --appendonly yes
+      --appendfsync everysec
+    ports:
+      - 6379:6379
+    volumes:
+      - .docker-conf/redis/data:/data
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+
   video-touch-api:
     build:
       context: api
       dockerfile: Dockerfile
     container_name: video-touch-api
+    depends_on:
+      - redis
     env_file: .env
     environment:
       - PORT=$API_PORT
@@ -27,6 +48,7 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
+      - redis
     environment:
       - DOWNLOAD_VIDEO_WORKER_PORT=$DOWNLOAD_VIDEO_WORKER_PORT
     volumes:
@@ -44,6 +66,7 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
+      - redis
     environment:
       - VALIDATE_VIDEO_WORKER_PORT=$VALIDATE_VIDEO_WORKER_PORT
     volumes:
@@ -62,6 +85,7 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
+      - redis
     environment:
       - THUMBNAIL_WORKER_PORT=$THUMBNAIL_WORKER_PORT
     volumes:
@@ -80,6 +104,7 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
+      - redis
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_360P_PROCESS_VIDEO_JOB_QUEUE
@@ -101,6 +126,7 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
+      - redis
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_480P_PROCESS_VIDEO_JOB_QUEUE
@@ -121,6 +147,7 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
+      - redis
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_720P_PROCESS_VIDEO_JOB_QUEUE
@@ -141,6 +168,7 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
+      - redis
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_1080P_PROCESS_VIDEO_JOB_QUEUE
@@ -162,6 +190,7 @@ services:
     env_file: .env
     depends_on:
       - video-touch-api
+      - redis
     environment:
       - UPLOAD_VIDEO_WORKER_PORT=$UPLOAD_VIDEO_WORKER_PORT
     volumes:
