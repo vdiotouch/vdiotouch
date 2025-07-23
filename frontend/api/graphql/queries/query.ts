@@ -124,3 +124,12 @@ export const RECREATE_ASSET_MUTATION = gql`
     }
   }
 `;
+
+export const GET_ASSET_MASTER_PLAYLIST_SIGNED_URL = gql`
+  query ($id: String!) {
+    GetAssetMasterPlaylistSignedUrl(_id: $id) {
+      main_playlist_url
+      resolutions_token
+    }
+  }
+`;

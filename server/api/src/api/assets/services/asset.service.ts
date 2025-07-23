@@ -302,7 +302,12 @@ export class AssetService {
     const { token, expires } = this.signedUrlGeneratorService.generateSecureUrl(s3AssetPath, 3600);
 
     // Construct the full URL for the main playlist
-    let mainPlaylistToken = `md5=${token}&expires=${expires}`;
+    let mainPlaylistToken = '';
+    if (asset.master_file_name.includes('?v')) {
+      mainPlaylistToken = `v=${asset.master_file_name.split('?v=')[1]}&md5=${token}&expires=${expires}`;
+    } else {
+      mainPlaylistToken = `md5=${token}&expires=${expires}`;
+    }
 
     // Generate tokens for each resolution path
     for (let path of paths) {
@@ -313,14 +318,6 @@ export class AssetService {
       // Construct the full URL for each resolution path
       resolutionsToken[`/${resolutionPath}`] = `md5=${token}&expires=${expires}`;
     }
-
-    console.log({
-      main_playlist_url: `${Utils.getMasterPlaylistUrl(
-        asset._id.toString(),
-        AppConfigService.appConfig.CDN_BASE_URL
-      )}?${mainPlaylistToken}`,
-      resolutions_token: resolutionsToken,
-    });
 
     return {
       main_playlist_url: `${Utils.getMasterPlaylistUrl(
