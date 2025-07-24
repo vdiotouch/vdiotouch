@@ -9,7 +9,7 @@ import {
   PlaylistSignedUrlResponse,
   VideoDetails,
 } from "@/api/graphql/types/video-details";
-import { bytesToMegaBytes, secondsToHHMMSS } from "@/lib/utils";
+import { bytesToMegaBytes, getPollInterval, secondsToHHMMSS } from "@/lib/utils";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +42,9 @@ const VideoDetailsPage: NextPage = () => {
       id: id,
     },
     fetchPolicy: "network-only", // Force network request on each page load, don't use cache
+    pollInterval:getPollInterval(
+      process.env.NEXT_PUBLIC_UPDATE_DATA_INTERVAL_IN_SECONDS as any,
+    ),
   });
 
   // Query for getting the signed URL from the server

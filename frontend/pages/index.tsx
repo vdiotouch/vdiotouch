@@ -24,7 +24,7 @@ import {
   RECREATE_ASSET_MUTATION,
 } from "@/api/graphql/queries/query";
 import { VIDEO_STATUS } from "@/lib/constant";
-import { secondsToHHMMSS } from "@/lib/utils";
+import { getPollInterval, secondsToHHMMSS } from "@/lib/utils";
 import { NextPage } from "next";
 import PrivateRoute from "@/components/private-route";
 import dynamic from "next/dynamic";
@@ -204,6 +204,9 @@ const HomePage: NextPage = () => {
       after: null,
     },
     fetchPolicy: "network-only",
+    pollInterval: getPollInterval(
+      process.env.NEXT_PUBLIC_UPDATE_DATA_INTERVAL_IN_SECONDS as any,
+    ),
   });
 
   console.log("data ", data);
