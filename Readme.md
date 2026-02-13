@@ -1,12 +1,12 @@
 <h1 align="center" style="border-bottom: none">
-    <a href="https://github.com/toufiq-austcse/video-touch" target="_blank">
-        <img alt="Vdio Touch" src="./images/logo.png" width="200">
+    <a href="" target="_blank">
+        <img alt="SigNoz" src="./images/logo.png" width="100" height="100">
     </a>
-
+    <br>VDIO Touch
 </h1>
-> Vdio Touch is a Video Hosting & Streaming platform. In Video Touch users can easily upload, manage and stream videos on demand.
+> Video Touch is a Video Hosting & Streaming platform. In Video Touch users can easily upload, manage and stream videos on demand.
 
-<img src ="images/dashboard.png"/>
+<img src ="images/dashboard.jpeg"/>
   
 ## Table Of Contents
 - [The Goals of This Project](#goal)
