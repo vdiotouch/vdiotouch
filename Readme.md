@@ -1,13 +1,13 @@
 <h1 align="center" style="border-bottom: none">
-    <a href="" target="_blank">
-        <img alt="SigNoz" src="./images/logo.png" width="100" height="100">
+    <a href="https://github.com/toufiq-austcse/video-touch" target="_blank">
+        <img alt="Video Touch" src="./images/logo.png" width="200">
     </a>
-    <br>VDIO Touch
+
 </h1>
 > Video Touch is a Video Hosting & Streaming platform. In Video Touch users can easily upload, manage and stream videos on demand.
 
-<img src ="images/dashboard.jpeg"/>
-  
+<img src ="images/dashboard.png"/>
+
 ## Table Of Contents
 - [The Goals of This Project](#goal)
 - [Features](#features)
@@ -69,40 +69,40 @@ To run this project locally, follow these steps:
 git clone git@github.com:toufiq-austcse/video-touch.git
 ```
 2. Run server app
-  *   You will need AWS credentials, S3 Bucket and Cloudfront distribution
-  *   From project directory run the following commands:
-      ```
-      cd server
-      cp example.env .env
-      ```
-  *   Put your aws credentials, s3 bucket name and cloudfront cdn url in the following env's value
-      ```
-      AWS_ACCESS_KEY_ID=
-      AWS_REGION=
-      AWS_SECRET_ACCESS_KEY=
-      AWS_S3_BUCKET_NAME=
-      CDN_BASE_URL=
-      ```
-  *  Create a seperate diretory for videos in your s3 bucket and put directory url in the following env value. Example value `https://test-bucket.s3.ap-southeast-1.amazonaws.com/videos`
+*   You will need AWS credentials, S3 Bucket and Cloudfront distribution
+*   From project directory run the following commands:
+    ```
+    cd server
+    cp example.env .env
+    ```
+*   Put your aws credentials, s3 bucket name and cloudfront cdn url in the following env's value
+    ```
+    AWS_ACCESS_KEY_ID=
+    AWS_REGION=
+    AWS_SECRET_ACCESS_KEY=
+    AWS_S3_BUCKET_NAME=
+    CDN_BASE_URL=
+    ```
+*  Create a seperate diretory for videos in your s3 bucket and put directory url in the following env value. Example value `https://test-bucket.s3.ap-southeast-1.amazonaws.com/videos`
 
-       ```
-       VIDEO_BASE_URL=
-      ```
-  * Put your JWT secret key and token expiren value in seconds in the following env's value
-       ```
-      JWT_SECRET=
-      JWT_EXPIRATION_TIME_IN_SEC=
-       ```     
-  * Run the follwong command
-       ```
-          docker compose up -d
-       ```
+     ```
+     VIDEO_BASE_URL=
+    ```
+* Put your JWT secret key and token expiren value in seconds in the following env's value
+     ```
+    JWT_SECRET=
+    JWT_EXPIRATION_TIME_IN_SEC=
+     ```     
+* Run the follwong command
+     ```
+        docker compose up -d
+     ```
 3. Run the Frontend app
-  *   From project directory run the following commands:
-      ```
-      cd frontend
-      docker compose up -d
-      ```
+*   From project directory run the following commands:
+    ```
+    cd frontend
+    docker compose up -d
+    ```
 
 
 <a id="frontend"></a>
