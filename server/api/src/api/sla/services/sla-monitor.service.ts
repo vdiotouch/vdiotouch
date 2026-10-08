@@ -152,7 +152,7 @@ export class SlaMonitorService implements OnModuleInit {
     const groups = new Map<string, NotificationGroup>();
     for (const asset of claimed) {
       const id = digest ? digestId : mongoose.Types.ObjectId();
-      const key = id.toHexString();
+      const key = id.toString();
       if (!groups.has(key)) {
         groups.set(key, { id, assets: [] });
       }
@@ -191,7 +191,7 @@ export class SlaMonitorService implements OnModuleInit {
         if (!group.assets.length) {
           continue;
         }
-        const items = group.assets.map((asset) => contexts.get(asset._id.toHexString())!);
+        const items = group.assets.map((asset) => contexts.get(asset._id.toString())!);
         const payload = digest
           ? this.formatter.buildDigest(items, config.SLA_WARNING_THRESHOLD_MINUTES)
           : this.formatter.buildSingle(items[0]!);
@@ -247,7 +247,7 @@ export class SlaMonitorService implements OnModuleInit {
     const emails = await this.userService.findEmailsByIds(userIds);
 
     for (const asset of assets) {
-      const key = asset._id.toHexString();
+      const key = asset._id.toString();
       contexts.set(key, {
         asset: {
           _id: asset._id,

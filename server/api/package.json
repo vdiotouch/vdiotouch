@@ -113,5 +113,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "resolutions": {
+    "@nestjs/graphql/**/@graphql-tools/merge": "9.0.24"
   }
 }

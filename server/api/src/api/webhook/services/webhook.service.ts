@@ -1,19 +1,19 @@
-import {AppConfigService} from '@/src/common/app-config/service/app-config.service';
-import {Injectable} from '@nestjs/common';
-import {AssetDocument} from '../../assets/schemas/assets.schema';
-import {WebhookPayloadDto} from '../dto/webhook-payload.dto';
-import {FileDocument} from '@/src/api/assets/schemas/files.schema';
-import {Constants} from 'video-touch-common';
-import {WebHookDocument} from '@/src/api/webhook/schemas/webhook.schema';
-import {CreateWebhookInputDto} from '@/src/api/webhook/dto/create-webhook-input.dto';
-import {UserDocument} from '@/src/api/auth/schemas/user.schema';
-import {WebhookMapper} from '@/src/api/webhook/mapper/webhook.mapper';
-import {WebhookRepository} from '@/src/api/webhook/repositories/webhook.repository';
-import {ListWebhookInputDto} from '@/src/api/webhook/dto/list-webhook-input.dto';
-import {UpdateWebhookInputDto} from '@/src/api/webhook/dto/update-webhook-input.dto';
-import {RabbitMqService} from '@/src/common/rabbit-mq/service/rabbitmq.service';
-import {WebhookNotifyConsumerDto} from '@/src/api/webhook/dto/webhook-notify-consumer.dto';
-import {WEBHOOK_IDENTIFICATION_TYPES} from '@/src/common/constants';
+import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
+import { Injectable } from '@nestjs/common';
+import { AssetDocument } from '../../assets/schemas/assets.schema';
+import { WebhookPayloadDto } from '../dto/webhook-payload.dto';
+import { FileDocument } from '@/src/api/assets/schemas/files.schema';
+import { Constants } from 'video-touch-common';
+import { WebHookDocument } from '@/src/api/webhook/schemas/webhook.schema';
+import { CreateWebhookInputDto } from '@/src/api/webhook/dto/create-webhook-input.dto';
+import { UserDocument } from '@/src/api/auth/schemas/user.schema';
+import { WebhookMapper } from '@/src/api/webhook/mapper/webhook.mapper';
+import { WebhookRepository } from '@/src/api/webhook/repositories/webhook.repository';
+import { ListWebhookInputDto } from '@/src/api/webhook/dto/list-webhook-input.dto';
+import { UpdateWebhookInputDto } from '@/src/api/webhook/dto/update-webhook-input.dto';
+import { RabbitMqService } from '@/src/common/rabbit-mq/service/rabbitmq.service';
+import { WebhookNotifyConsumerDto } from '@/src/api/webhook/dto/webhook-notify-consumer.dto';
+import { WEBHOOK_IDENTIFICATION_TYPES } from '@/src/common/constants';
 
 @Injectable()
 export class WebhookService {
@@ -122,7 +122,7 @@ export class WebhookService {
           size: updatedFile.size,
           type: updatedFile.type,
           file_url: cdnFileUrl,
-          meta:asset.meta
+          meta: asset.meta,
         },
       };
       for (let webhook of webhooks) {
