@@ -1,4 +1,5 @@
-import { Body, Controller, ForbiddenException, NotFoundException, Param, Post } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, NotFoundException, Param, Post, UseGuards } from '@nestjs/common';
+import { ApiHeader, ApiTags } from '@nestjs/swagger';
 import { CreateAssetInputDto } from '@/src/api/assets/dtos/create-asset-input.dto';
 import { AssetService } from '@/src/api/assets/services/asset.service';
 import { AssetMapper } from '@/src/api/assets/mapper/asset.mapper';
@@ -9,7 +10,15 @@ import mongoose from 'mongoose';
 import { FileRepository } from '@/src/api/assets/repositories/file.repository';
 import { FILE_STATUS } from 'video-touch-common/dist/constants';
 import { TranscriptService } from '@/src/api/assets/services/transcript.service';
+import { InternalApiKeyGuard } from '@/src/common/guards/internal-api-key.guard';
 
+/**
+ * Server-to-server routes. The web app uses the GraphQL mutations instead, so these
+ * need the x-internal-api-key header and act on any user's assets.
+ */
+@ApiTags('assets')
+@ApiHeader({ name: 'x-internal-api-key', required: true })
+@UseGuards(InternalApiKeyGuard)
 @Controller({ version: '1', path: 'assets' })
 export class AssetController {
   constructor(

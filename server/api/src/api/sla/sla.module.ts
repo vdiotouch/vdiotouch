@@ -11,7 +11,7 @@ import { SlaNotificationRepository } from '@/src/api/sla/repositories/sla-notifi
 import { SlaAlertFormatterService } from '@/src/api/sla/services/sla-alert-formatter.service';
 import { SlaMonitorService } from '@/src/api/sla/services/sla-monitor.service';
 import { SlackChannel } from '@/src/api/sla/channels/slack.channel';
-import { InternalApiKeyGuard } from '@/src/api/sla/guards/internal-api-key.guard';
+import { InternalApiKeyGuard } from '@/src/common/guards/internal-api-key.guard';
 import { SlaController } from '@/src/api/sla/controllers/sla.controller';
 
 // Deliberately no BullModule / RabbitMQModule: SLA alerting must keep working while Redis is down.
