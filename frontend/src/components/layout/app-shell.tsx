@@ -15,8 +15,8 @@ interface AppShellProps {
 }
 
 /**
- * Signed-in layout: side nav (a drawer below 992px), header with breadcrumb
- * and account menu, and the current page in <Outlet />.
+ * Signed-in layout: side nav with the profile card at the bottom (a drawer
+ * below 992px), header with breadcrumb, and the current page in <Outlet />.
  */
 export function AppShell({ user, onLogout }: AppShellProps) {
   const { isMobile, isNarrow } = useResponsive();
@@ -31,10 +31,12 @@ export function AppShell({ user, onLogout }: AppShellProps) {
 
   return (
     <Layout className={styles.shell}>
-      {!isNarrow && <AppSider selected={selected} />}
+      {!isNarrow && <AppSider selected={selected} user={user} onLogout={onLogout} />}
       <NavDrawer
         open={isNarrow && drawerOpen}
         selected={selected}
+        user={user}
+        onLogout={onLogout}
         onClose={() => setDrawerOpen(false)}
       />
 

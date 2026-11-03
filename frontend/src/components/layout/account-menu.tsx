@@ -1,6 +1,6 @@
-import { Avatar, Button, Dropdown, Typography } from "antd";
-import type { MenuProps } from "antd";
-import { getInitials } from "@/shared/lib/initials";
+import type { ReactElement } from "react";
+import { Dropdown, Typography } from "antd";
+import type { DropdownProps, MenuProps } from "antd";
 import styles from "./app-shell.module.css";
 
 export interface AccountMenuUser {
@@ -11,10 +11,14 @@ export interface AccountMenuUser {
 interface AccountMenuProps {
   user: AccountMenuUser;
   onLogout: () => void;
+  /** Where the menu opens relative to the trigger. */
+  placement?: DropdownProps["placement"];
+  /** The element that opens the menu, e.g. an avatar or the profile card. */
+  children: ReactElement;
 }
 
-/** Avatar button in the header that opens "who am I" and "Log out". */
-export function AccountMenu({ user, onLogout }: AccountMenuProps) {
+/** "Who am I" and "Log out" menu, opened by clicking its child. */
+export function AccountMenu({ user, onLogout, placement, children }: AccountMenuProps) {
   const items: MenuProps["items"] = [
     {
       key: "who",
@@ -38,17 +42,8 @@ export function AccountMenu({ user, onLogout }: AccountMenuProps) {
   };
 
   return (
-    <Dropdown trigger={["click"]} menu={{ items, onClick: handleClick }}>
-      <Button
-        type="text"
-        shape="circle"
-        aria-label={`Account menu, ${user.name}`}
-        className={styles.accountButton}
-      >
-        <Avatar aria-hidden="true" className={styles.avatar}>
-          {getInitials(user.name)}
-        </Avatar>
-      </Button>
+    <Dropdown trigger={["click"]} placement={placement} menu={{ items, onClick: handleClick }}>
+      {children}
     </Dropdown>
   );
 }

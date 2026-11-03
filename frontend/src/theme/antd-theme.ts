@@ -104,7 +104,6 @@ export const antdTheme: ThemeConfig = {
     Checkbox: { colorBorder: t.borderStrong },
     Switch: { handleBg: "#ffffff" },
     Segmented: { itemSelectedColor: t.content, itemColor: t.muted },
-    Modal: { modalCloseBtnSize: 32 },
     Tag: { defaultColor: t.content },
     Card: { colorBorderSecondary: t.borderSubtle },
     Tabs: {
