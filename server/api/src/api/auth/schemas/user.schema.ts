@@ -16,6 +16,10 @@ export class UserDocument extends AbstractDocument {
 
   @Prop({ required: true })
   password: string;
+
+  /** Tokens issued before this moment are refused, so changing the password logs out every device. */
+  @Prop({ required: false })
+  password_changed_at?: Date;
 }
 
 export const UserSchema = SchemaFactory.createForClass(UserDocument);

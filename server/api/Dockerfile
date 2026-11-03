@@ -34,6 +34,8 @@ COPY --from=base /app/package.json ./
 COPY --from=dev /app/dist/ ./dist/
 # get the node_modules from the intial cache
 COPY --from=base /app/node_modules/ ./node_modules/
+# operator scripts, such as `node scripts/set-user-password.js <email>`
+COPY ./scripts/ ./scripts/
 # expose application port
 EXPOSE 3000
 # start

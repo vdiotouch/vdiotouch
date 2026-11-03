@@ -113,6 +113,13 @@ git clone git@github.com:toufiq-austcse/video-touch.git
     docker compose up -d
     ```
 *   Open `http://localhost:3009`. For local development (`npm run dev`) and the full list of env values, see [`frontend/Readme.md`](frontend/Readme.md).
+4. Reset a user's password
+*   There is no "forgot password" yet. Someone with server access sets a new one; it's asked for at the prompt and not shown:
+    ```
+    docker compose exec video-touch-api node scripts/set-user-password.js user@example.com
+    ```
+    Outside Docker, run `npm run user:set-password -- user@example.com` from `server/api`.
+*   The user is logged out on every device and logs in again with the new password.
 
 
 <a id="frontend"></a>
