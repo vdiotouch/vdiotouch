@@ -1,6 +1,6 @@
 import { Card, Descriptions } from "antd";
 import { formatBytes, formatDateTime, formatDuration } from "@/shared/lib/format";
-import { resolutionFiles } from "../../lib/asset-files";
+import { resolutionFiles, totalStorage } from "../../lib/asset-files";
 import type { AssetDetails } from "../../types";
 
 function resolutionsSummary(asset: AssetDetails) {
@@ -16,10 +16,18 @@ function sourceSummary(asset: AssetDetails) {
   return parts.join(", ") || "–";
 }
 
+/** "1.20 GB (9 files)": source, downloads and every resolution together. */
+function totalSizeSummary(asset: AssetDetails) {
+  const { bytes, fileCount } = totalStorage(asset);
+  if (bytes === 0) return "–";
+  return `${formatBytes(bytes)} (${fileCount} ${fileCount === 1 ? "file" : "files"})`;
+}
+
 export function MetadataCard({ asset }: { asset: AssetDetails }) {
   const rows: [string, string][] = [
     ["Duration", asset.duration > 0 ? formatDuration(asset.duration) : "–"],
     ["Source", sourceSummary(asset)],
+    ["Total size", totalSizeSummary(asset)],
     ["Multiple resolutions", resolutionsSummary(asset)],
     ["Transcript", asset.with_transcription ? "On" : "Off"],
     ["Created", formatDateTime(asset.created_at)],
