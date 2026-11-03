@@ -1,11 +1,14 @@
-import { INestApplication } from '@nestjs/common';
+import { INestApplication, Logger } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import basicAuth from 'express-basic-auth';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
+import { adminBasicAuth, hasAdminCredentials } from '@/src/common/middlewares/admin-basic-auth.middleware';
 
 export async function setupSwagger(app: INestApplication, port: number) {
   let swaggerDocPath = '/api-doc';
-  let { SWAGGER_USERNAME, SWAGGER_PASSWORD } = process.env;
+  if (!hasAdminCredentials()) {
+    Logger.warn('SWAGGER_USERNAME or SWAGGER_PASSWORD is not set, so Swagger is turned off', 'Swagger');
+    return;
+  }
 
   const config = new DocumentBuilder()
     .setTitle(AppConfigService.appConfig.SWAGGER_TITLE)
@@ -22,13 +25,7 @@ export async function setupSwagger(app: INestApplication, port: number) {
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
-  app.use(
-    [swaggerDocPath, swaggerDocPath + '-json'],
-    basicAuth({
-      challenge: true,
-      users: { [SWAGGER_USERNAME]: SWAGGER_PASSWORD },
-    })
-  );
+  app.use([swaggerDocPath, swaggerDocPath + '-json'], adminBasicAuth);
 
   SwaggerModule.setup(swaggerDocPath, app, document, {
     swaggerOptions: { persistAuthorization: true, ignoreGlobalPrefix: true },

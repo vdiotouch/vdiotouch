@@ -35,6 +35,7 @@ import {
 } from '@/src/common/dto/base-api-response.dto';
 import { UserMapper } from '@/src/api/auth/mapper/user.mapper';
 import { LocalAuthGuard } from '@/src/api/auth/guards/local-auth.guard';
+import { AuthRateLimitGuard } from '@/src/api/auth/guards/auth-rate-limit.guard';
 import { User } from '@/src/api/auth/models/user.model';
 
 @Controller({ version: '1', path: 'auth' })
@@ -44,6 +45,7 @@ export class AuthController {
   constructor(private userService: UserService, private authService: AuthService) {}
 
   @Post('signup')
+  @UseGuards(AuthRateLimitGuard)
   @ApiCreatedResponse({ type: SwaggerBaseApiResponse(AuthResDto, HttpStatus.CREATED) })
   @ApiBadRequestResponse({ type: SwaggerBaseApiErrorResponse(HttpStatus.BAD_REQUEST) })
   @ApiUnprocessableEntityResponse({ type: SwaggerBaseApiErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY) })
@@ -63,7 +65,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  @UseGuards(LocalAuthGuard)
+  @UseGuards(AuthRateLimitGuard, LocalAuthGuard)
   @ApiOkResponse({ type: SwaggerBaseApiResponse(AuthResDto, HttpStatus.OK) })
   @ApiBadRequestResponse({ type: SwaggerBaseApiErrorResponse(HttpStatus.BAD_REQUEST) })
   @ApiUnauthorizedResponse({ type: SwaggerBaseApiErrorResponse(HttpStatus.UNAUTHORIZED) })

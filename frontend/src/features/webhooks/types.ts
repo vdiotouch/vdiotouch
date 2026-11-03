@@ -3,7 +3,7 @@ import type { CursorPage } from "@/shared/lib/use-cursor-pagination";
 export interface Webhook {
   _id: string;
   url: string;
-  secret_token: string | null;
+  has_secret: boolean;
   created_at: string;
   updated_at: string;
 }

@@ -111,4 +111,9 @@ export interface EnvironmentVariables {
   SLA_MAX_DELIVERY_ATTEMPTS: number;
   SLA_SLACK_WEBHOOK_URL?: string;
   INTERNAL_API_KEY?: string;
+  NODE_ENV: string;
+  /** Browser origins allowed to call the api with credentials. */
+  CORS_ORIGINS: string[];
+  /** Express `trust proxy` setting, so req.ip is the real client IP behind a proxy. */
+  TRUST_PROXY: boolean | number | string;
 }

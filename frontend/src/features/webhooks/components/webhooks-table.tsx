@@ -26,9 +26,9 @@ export function WebhooksTable({ webhooks, onEdit, onDelete }: WebhooksTableProps
     },
     {
       title: "Secret",
-      dataIndex: "secret_token",
+      dataIndex: "has_secret",
       width: 190,
-      render: (secret: string | null) => <SecretStatus hasSecret={!!secret} />,
+      render: (hasSecret: boolean) => <SecretStatus hasSecret={hasSecret} />,
     },
     {
       title: "Added",

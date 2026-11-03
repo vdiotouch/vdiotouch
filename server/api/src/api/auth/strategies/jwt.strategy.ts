@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UserService } from '@/src/api/auth/services/user.service';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { TokenPayload } from '@/src/api/auth/services/auth.service';
+import { JWT_ALGORITHM } from '@/src/api/auth/constants';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -12,6 +13,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: AppConfigService.appConfig.JWT_SECRET,
+      algorithms: [JWT_ALGORITHM],
     });
   }
 

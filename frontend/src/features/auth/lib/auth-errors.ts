@@ -4,13 +4,22 @@ function isClientError(err: unknown): err is ApiError {
   return err instanceof ApiError && !!err.status && err.status >= 400 && err.status < 500;
 }
 
-/** A 4xx from /auth/login means the email and password did not match. */
+const TOO_MANY_ATTEMPTS = "Too many attempts. Wait a minute and try again.";
+
+/** 429: the api limits log in and sign up attempts per minute. */
+function isRateLimited(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 429;
+}
+
+/** Any other 4xx from /auth/login means the email and password did not match. */
 export function loginErrorMessage(err: unknown): string {
+  if (isRateLimited(err)) return TOO_MANY_ATTEMPTS;
   if (isClientError(err)) return "Email or password is incorrect.";
   return err instanceof Error ? err.message : "Could not log in. Try again.";
 }
 
 export function signupErrorMessage(err: unknown): string {
+  if (isRateLimited(err)) return TOO_MANY_ATTEMPTS;
   return err instanceof Error ? err.message : "Could not create your account. Try again.";
 }
 

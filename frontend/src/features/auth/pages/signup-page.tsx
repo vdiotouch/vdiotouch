@@ -6,13 +6,13 @@ import { FormErrorAlert } from "@/components/feedback/form-error-alert";
 import { PasswordInput } from "@/components/form/password-input";
 import { TextLink } from "@/components/navigation/text-link";
 import { useAuth } from "../auth-provider";
-import { MIN_PASSWORD_LENGTH } from "../constants";
 import { AuthHeading } from "../components/auth-heading";
 import { AuthLayout } from "../components/auth-layout";
 import { AuthSwitchPrompt } from "../components/auth-switch-prompt";
 import { EmailField } from "../components/email-field";
 import { PasswordChecklist } from "../components/password-checklist";
 import { isEmailTakenError, signupErrorMessage } from "../lib/auth-errors";
+import { meetsPasswordRule } from "../lib/password-rule";
 
 interface SignupValues {
   name: string;
@@ -108,7 +108,10 @@ export function SignupPage() {
           // PasswordChecklist is the message; these rules only keep the field red.
           rules={[
             { required: true, message: " " },
-            { min: MIN_PASSWORD_LENGTH, message: " " },
+            {
+              validator: (_, value: string | undefined) =>
+                !value || meetsPasswordRule(value) ? Promise.resolve() : Promise.reject(new Error(" ")),
+            },
           ]}
           help={<PasswordChecklist password={password} submitted={submitted} />}
         >

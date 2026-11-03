@@ -38,7 +38,7 @@ export function WebhookDialog({ open, webhook, onClose }: WebhookDialogProps) {
   const removeSecret = Form.useWatch("removeSecret", form);
 
   const editing = !!webhook;
-  const hasSecret = !!webhook?.secret_token;
+  const hasSecret = !!webhook?.has_secret;
   const saving = create.isPending || update.isPending;
 
   // The form unmounts on close (destroyOnHidden), so it opens fresh next time.

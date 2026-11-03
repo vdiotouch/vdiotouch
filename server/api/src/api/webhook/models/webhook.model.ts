@@ -12,11 +12,10 @@ export class Webhook {
   @Expose()
   url: string;
 
-  @Field({
-    nullable: true,
-  })
+  /** The secret itself is never sent back; it's only used to sign webhook calls. */
+  @Field()
   @Expose()
-  secret_token: string;
+  has_secret: boolean;
 
   @Field()
   @Expose()

@@ -17,8 +17,8 @@ const LABELS: Record<StrengthScore, string> = {
 };
 
 /**
- * A rough guide for the meter only. The server enforces just the minimum
- * length, so anything from score 2 up is accepted.
+ * A rough guide for the meter only. The server enforces just the length
+ * rule, so anything from score 2 up is accepted.
  */
 export function getPasswordStrength(password: string): PasswordStrength {
   let score: StrengthScore;

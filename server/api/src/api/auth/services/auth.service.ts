@@ -4,6 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { Token } from '@/src/api/auth/dtos/auth-res.dto';
 import * as bcrypt from 'bcryptjs';
+import { BCRYPT_COST } from '@/src/api/auth/constants';
 
 export interface TokenPayload {
   user_id: string;
@@ -28,7 +29,7 @@ export class AuthService {
   }
 
   async getHashedPassword(password: string): Promise<string> {
-    return bcrypt.hash(password, 10);
+    return bcrypt.hash(password, BCRYPT_COST);
   }
 
   async verifyPassword(givenPassword: string, actualPassword: string) {
