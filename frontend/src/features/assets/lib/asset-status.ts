@@ -11,7 +11,7 @@ const STATUS_DISPLAY: Record<string, StatusDisplay> = {
   [ASSET_STATUS.DOWNLOADING]: { tone: "processing", label: "Downloading" },
   [ASSET_STATUS.DOWNLOADED]: { tone: "processing", label: "Downloaded" },
   [ASSET_STATUS.VALIDATED]: { tone: "processing", label: "Validated" },
-  [ASSET_STATUS.PROCESSING]: { tone: "processing", label: "Encoding" },
+  [ASSET_STATUS.PROCESSING]: { tone: "processing", label: "Processing" },
   [ASSET_STATUS.READY]: { tone: "success", label: "Ready" },
   [ASSET_STATUS.FAILED]: { tone: "error", label: "Failed" },
 };

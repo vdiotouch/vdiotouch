@@ -20,7 +20,7 @@ export interface SampleVideo {
 }
 
 export const SAMPLE_VIDEOS: SampleVideo[] = [
-  { title: "chapter-6-optics", tone: "processing", status: "Encoding", note: "Started 2 min ago" },
+  { title: "chapter-6-optics", tone: "processing", status: "Processing", note: "Started 2 min ago" },
   { title: "batch 22: table completion", tone: "success", status: "Ready", note: "4 resolutions" },
   { title: "lecture-09-thermo.mp4", tone: "warning", status: "Queued", note: "Waiting to start" },
 ];

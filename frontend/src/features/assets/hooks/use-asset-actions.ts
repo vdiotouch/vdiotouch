@@ -21,7 +21,7 @@ export function useAssetActions() {
     const single = targets.length === 1;
     modal.confirm({
       title: single ? `Re-process “${targets[0]!.title}”?` : `Re-process ${targets.length} videos?`,
-      content: "Encoding starts again from the source file. The current files stay until it finishes.",
+      content: "Processing starts again from the source file. The current files stay until it finishes.",
       okText: "Re-process",
       onOk: async () => {
         const results = await Promise.allSettled(
