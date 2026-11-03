@@ -9,11 +9,12 @@ function resolutionsSummary(asset: AssetDetails) {
   return count > 0 ? `On (${count} ${count === 1 ? "resolution" : "resolutions"})` : "On";
 }
 
-function sourceSummary(asset: AssetDetails) {
-  const parts: string[] = [];
-  if (asset.width > 0 && asset.height > 0) parts.push(`${asset.width} × ${asset.height}`);
-  if (asset.size > 0) parts.push(formatBytes(asset.size));
-  return parts.join(", ") || "–";
+function sourceResolution(asset: AssetDetails) {
+  return asset.width > 0 && asset.height > 0 ? `${asset.width} × ${asset.height}` : "–";
+}
+
+function sourceSize(asset: AssetDetails) {
+  return asset.size > 0 ? formatBytes(asset.size) : "–";
 }
 
 /** "1.20 GB (9 files)": source, downloads and every resolution together. */
@@ -26,7 +27,8 @@ function totalSizeSummary(asset: AssetDetails) {
 export function MetadataCard({ asset }: { asset: AssetDetails }) {
   const rows: [string, string][] = [
     ["Duration", asset.duration > 0 ? formatDuration(asset.duration) : "–"],
-    ["Source", sourceSummary(asset)],
+    ["Source resolution", sourceResolution(asset)],
+    ["Source size", sourceSize(asset)],
     ["Total size", totalSizeSummary(asset)],
     ["Multiple resolutions", resolutionsSummary(asset)],
     ["Transcript", asset.with_transcription ? "On" : "Off"],
