@@ -1,0 +1,8 @@
+/* 44px touch target for a small text link (WCAG 2.5.8). */
+.subtle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 6px;
+  font-size: 13px;
+}

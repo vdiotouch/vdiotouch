@@ -1,0 +1,140 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 40px 56px;
+  background: var(--surface-sunken);
+  border-inline-end: 1px solid var(--border-subtle);
+}
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  max-width: 520px;
+  padding-block: 28px;
+}
+/* Two classes to beat AntD's `h1.ant-typography`. */
+.body .headline {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.2;
+}
+.tagline {
+  display: block;
+  margin-top: 12px;
+  font-size: 16px;
+}
+.small {
+  font-size: 12px;
+}
+
+/* Preview card */
+.previewCard {
+  margin-top: 24px;
+  overflow: hidden;
+}
+
+.player {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 16 / 5.5;
+  background: var(--content);
+}
+.playButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--interactive);
+  box-shadow: 0 0 0 2px #ffffff;
+  color: #ffffff;
+  font-size: 26px;
+}
+.controls {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: var(--player-scrim-control);
+}
+.time {
+  color: var(--player-control);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.track {
+  flex: 1;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--player-track);
+}
+.trackFill {
+  width: 38%;
+  height: 100%;
+  background: var(--player-fill);
+}
+.quality {
+  color: var(--player-control-muted);
+  font-size: 12px;
+}
+
+.sampleList {
+  margin: 0;
+  padding: 4px 14px;
+  list-style: none;
+}
+.sampleRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 0;
+}
+.sampleRow + .sampleRow {
+  border-top: 1px solid var(--border-subtle);
+}
+.sampleText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sampleTitle {
+  max-width: 260px;
+}
+
+/* Feature list */
+.featureList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.featureIcon {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--interactive-subtle);
+  color: var(--interactive-text);
+  font-size: 16px;
+}

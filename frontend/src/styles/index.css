@@ -1,0 +1,83 @@
+@import "tailwindcss";
+@import "./tokens.css";
+@import "./antd-overrides.css";
+@import "plyr/dist/plyr.css";
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  body {
+    background-color: var(--surface-sunken);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+  }
+}
+
+/* =========================================================================
+   Player chrome (FR-BRD-06). A player control has no known background — it
+   sits on whatever frame the video is showing — so contrast comes from a dark
+   scrim, not the page theme. Floors are measured against a pure-white frame
+   (the worst case):
+
+     control row (text)   alpha 0.70  ->  white text    >= 8.45:1
+     icon zone (>=24px)   alpha 0.45  ->  white icons   >= 3.36:1
+     caption box          alpha 0.75  ->  white caption >= 10.37:1
+
+   The seek bar is deliberately OPAQUE: a translucent track composites with
+   the frame and loses its contrast guarantee the moment the video goes bright.
+   ========================================================================= */
+.vt-player {
+  position: relative;
+  background: var(--color-neutral-1000);
+
+  --plyr-video-control-color: var(--player-control);
+  --plyr-video-control-color-hover: var(--player-control);
+  --plyr-video-control-background-hover: var(--interactive);
+  --plyr-color-main: var(--player-fill);
+
+  --plyr-range-track-height: 5px;
+  --plyr-video-range-track-background: var(--player-track);
+  --plyr-video-range-thumb-background: var(--player-handle);
+  --plyr-range-fill-background: var(--player-fill);
+  --plyr-video-progress-buffered-background: var(--player-track-buffer);
+
+  --plyr-captions-background: var(--player-caption-bg);
+  --plyr-captions-text-color: var(--player-caption-fg);
+  --plyr-font-size-captions-base: 18px;
+
+  --plyr-menu-background: var(--surface-overlay);
+  --plyr-menu-color: var(--content);
+  --plyr-tooltip-background: var(--surface-overlay);
+  --plyr-tooltip-color: var(--content);
+  --plyr-focus-visible-color: var(--border-focus);
+}
+
+.vt-player .plyr__controls {
+  background: linear-gradient(
+    to top,
+    var(--player-scrim-control) 0%,
+    var(--player-scrim-control) 36%,
+    var(--player-scrim-icon) 68%,
+    transparent 100%
+  );
+  padding-top: 36px;
+}
+
+.vt-player .plyr__progress__buffer,
+.vt-player input[type="range"]::-webkit-slider-runnable-track,
+.vt-player input[type="range"]::-moz-range-track {
+  opacity: 1;
+}
+
+.vt-player .plyr__caption {
+  background: var(--player-caption-bg);
+  border-radius: 4px;
+  padding: 2px 8px;
+}
+
+.vt-player .plyr__control--overlaid {
+  background: var(--interactive);
+  color: var(--interactive-foreground);
+  border: 2px solid var(--player-control);
+}

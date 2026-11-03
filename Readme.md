@@ -27,7 +27,7 @@
 *  Using GraphQL for client side communications
 *  Using AWS s3 as storage
 *  Stream videos with CDN (AWS Cloudfront)
-*  Building a simple Dashboard with Next.js and shadcn/ui
+*  Building a simple Dashboard with React and Ant Design
 *  Using Github Actions for implementing CI
 *  Using Docker-Compose for our deployment mechanism.
 
@@ -49,8 +49,8 @@
 * [GraphQL](https://graphql.org/) - For writing Client Side API's
 * [AWS S3](https://aws.amazon.com/s3/) - As Video Storage
 * [AWS CloudFront](https://aws.amazon.com/cloudfront/) - As CDN
-* [Next.js](https://nextjs.org/) - For developing dashboard
-* [shadcn/ui](https://ui.shadcn.com/) - UI compoenent
+* [Vite](https://vite.dev/) + [React](https://react.dev/) - For developing dashboard
+* [Ant Design](https://ant.design/) - UI components
 * [Docker](https://www.docker.com/) - For deployment
 * [Github Actions](https://github.com/features/actions) - For CI
 
@@ -101,8 +101,10 @@ git clone git@github.com:toufiq-austcse/video-touch.git
 *   From project directory run the following commands:
     ```
     cd frontend
+    cp .env.example .env
     docker compose up -d
     ```
+*   Open `http://localhost:3009`. For local development (`npm run dev`) and the full list of env values, see [`frontend/Readme.md`](frontend/Readme.md).
 
 
 <a id="frontend"></a>

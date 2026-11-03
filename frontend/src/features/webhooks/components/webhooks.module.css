@@ -1,0 +1,73 @@
+.block {
+  display: block;
+}
+.nowrap {
+  white-space: nowrap;
+}
+.small {
+  font-size: 12px;
+}
+
+/* Mobile cards */
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px;
+}
+.card + .card {
+  border-top: 1px solid var(--border-subtle);
+}
+.cardText {
+  flex: 1;
+  min-width: 0;
+}
+.url {
+  word-break: break-all;
+}
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.empty {
+  padding: 40px 16px;
+}
+
+/* Guide card */
+.payload {
+  margin: 0;
+  padding: 10px;
+  overflow: auto;
+  border-radius: 8px;
+  background: var(--surface-sunken);
+  color: var(--content);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+  line-height: 1.55;
+}
+.note {
+  margin: 10px 0 0 !important;
+  font-size: 12px;
+}
+/* Two classes to beat AntD's `h5.ant-typography`. */
+.eventsTitle.eventsTitle {
+  margin: 20px 0 8px;
+}
+.events {
+  margin: 0;
+}
+.event {
+  padding: 8px 0;
+}
+.event + .event {
+  border-top: 1px solid var(--border-subtle);
+}
+.eventDescription {
+  margin: 2px 0 0;
+  color: var(--content-muted);
+  font-size: 12px;
+}

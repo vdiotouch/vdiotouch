@@ -1,0 +1,48 @@
+.page {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 100vh;
+  background: var(--surface);
+  color: var(--content);
+}
+.split {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  min-height: 100vh;
+  padding: 24px 20px;
+}
+.split .main {
+  padding: 40px 56px;
+}
+
+/* Logo (narrow screens only) on the left, "Have an account?" on the right. */
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.split .topBar {
+  justify-content: flex-end;
+}
+
+.formArea {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding-block: 32px;
+}
+.formColumn {
+  width: 100%;
+  max-width: 400px;
+}
+
+.footer {
+  display: flex;
+  justify-content: center;
+}
