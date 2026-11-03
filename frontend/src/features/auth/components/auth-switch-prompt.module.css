@@ -1,0 +1,8 @@
+.compact {
+  font-size: 13px;
+}
+.centered {
+  display: block;
+  margin-top: 24px;
+  text-align: center;
+}

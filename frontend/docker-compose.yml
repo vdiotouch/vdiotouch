@@ -1,11 +1,18 @@
-version: "3.7"
 services:
   video-touch-web:
     build: .
     container_name: video-touch-web
     ports:
       - "3009:3000"
-    env_file:
-      - .env
+    environment:
+      # Runtime env, written into /runtime-env.js by the container entrypoint,
+      # so the same image runs anywhere without a rebuild. Values come from
+      # .env (the VITE_* names used by `npm run dev`); an older .env with the
+      # NEXT_PUBLIC_* names still works.
+      NEXT_PUBLIC_VIDEO_TOUCH_API_URL: ${NEXT_PUBLIC_VIDEO_TOUCH_API_URL:-${VITE_VIDEO_TOUCH_API_URL:-}}
+      NEXT_PUBLIC_VIDEO_LIST_PAGE_SIZE: ${NEXT_PUBLIC_VIDEO_LIST_PAGE_SIZE:-${VITE_VIDEO_LIST_PAGE_SIZE:-10}}
+      NEXT_PUBLIC_UPDATE_DATA_INTERVAL_IN_SECONDS: ${NEXT_PUBLIC_UPDATE_DATA_INTERVAL_IN_SECONDS:-${VITE_UPDATE_DATA_INTERVAL_IN_SECONDS:-5}}
+      AUTH_COOKIE_REFRESH: ${AUTH_COOKIE_REFRESH:-${VITE_AUTH_COOKIE_REFRESH:-false}}
+      SUPPORT_EMAIL: ${SUPPORT_EMAIL:-${VITE_SUPPORT_EMAIL:-}}
+      MAX_VIDEO_SIZE_MB: ${MAX_VIDEO_SIZE_MB:-${VITE_MAX_VIDEO_SIZE_MB:-}}
     restart: always
-

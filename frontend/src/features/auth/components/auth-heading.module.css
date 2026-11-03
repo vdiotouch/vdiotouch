@@ -1,0 +1,12 @@
+.heading {
+  margin-bottom: 24px;
+}
+/* Two classes to beat AntD's `h2.ant-typography`. */
+.heading .title {
+  margin: 0;
+  font-size: 26px;
+}
+.subtitle {
+  display: block;
+  margin-top: 6px;
+}

@@ -1,0 +1,153 @@
+/* Header */
+.header {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.headerMobile {
+  flex-wrap: wrap;
+}
+.backLink {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: var(--content);
+}
+.backLink:hover {
+  background: var(--interactive-subtle);
+  color: var(--interactive-text);
+}
+.headerText {
+  flex: 1;
+  min-width: 0;
+}
+.headerMobile .headerText {
+  flex-basis: calc(100% - 48px);
+}
+/* Two classes to beat AntD's `h4.ant-typography`. */
+.header .headerTitle {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.headerMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+.headerMobile .headerActions {
+  flex-basis: 100%;
+  margin-left: 44px;
+}
+
+/* Player */
+.player {
+  aspect-ratio: 16 / 9;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 8px;
+}
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.playerPlaceholder {
+  aspect-ratio: 16 / 9;
+  border-radius: 8px;
+  background: var(--color-neutral-1000);
+}
+.playerMessage {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  padding: 16px;
+  border-radius: 8px;
+  background: var(--color-neutral-1000);
+  color: var(--content-inverted);
+  text-align: center;
+}
+.playerMessageIcon {
+  font-size: 32px;
+  color: var(--color-warning-400);
+}
+.playerMessageTitle {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 600;
+}
+.playerMessageText {
+  max-width: 380px;
+  margin-top: 4px;
+  color: var(--player-control-muted);
+}
+.playerMessageActions {
+  margin-top: 14px;
+}
+
+/* Save bar */
+.saveError {
+  margin-bottom: 12px;
+}
+.saveBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.saveStatus {
+  margin-right: auto;
+}
+
+/* Cards */
+.cardTitleNote {
+  font-size: 13px;
+  font-weight: 400;
+}
+.cardEmpty {
+  margin: 0;
+  padding: 16px;
+}
+.listItem {
+  padding: 10px 12px !important;
+}
+.fieldLabel {
+  display: block;
+  font-size: 12px;
+}
+.copyableValue {
+  margin-bottom: 14px !important;
+}
+.copyableValue:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Timeline */
+.timeline {
+  margin-bottom: -24px;
+}
+.stepMeta {
+  font-size: 12px;
+}
+.stepDone {
+  color: var(--status-success);
+  font-size: 16px;
+}
+.stepActive {
+  color: var(--status-processing);
+  font-size: 16px;
+}
+.stepFailed {
+  color: var(--status-danger);
+  font-size: 16px;
+}
+.timelineToggle {
+  margin-top: 24px;
+  padding: 0;
+}

@@ -1,0 +1,85 @@
+/*
+ * Global overrides for AntD components that the theme tokens
+ * (src/theme/antd-theme.ts) cannot express: one focus ring, link underline,
+ * iOS input zoom and reduced motion.
+ */
+
+/* =========================================================================
+   One focus ring. Every focusable thing — native or AntD — shows the same
+   2px --border-focus outline, and AntD's own glow (box-shadow) is not the
+   focus indicator. Unlayered so it wins over AntD's zero-specificity styles.
+   ========================================================================= */
+:where(a, button, [role="button"], [role="tab"], [role="menuitem"], [role="switch"],
+    [tabindex]:not([tabindex="-1"]), summary, .ant-menu-item, .ant-segmented-item):focus-visible {
+  outline: 2px solid var(--border-focus) !important;
+  outline-offset: 2px !important;
+  border-radius: 6px;
+}
+.ant-btn:focus-visible,
+.ant-modal-close:focus-visible,
+.ant-drawer-close:focus-visible,
+.ant-tabs-tab-btn:focus-visible,
+.ant-pagination-item:focus-visible,
+.ant-pagination-prev .ant-pagination-item-link:focus-visible,
+.ant-pagination-next .ant-pagination-item-link:focus-visible {
+  outline: 2px solid var(--border-focus) !important;
+  outline-offset: 2px !important;
+}
+.ant-checkbox-input:focus-visible + .ant-checkbox-inner,
+.ant-radio-input:focus-visible + .ant-radio-inner,
+.ant-segmented-item-input:focus-visible + .ant-segmented-item-label {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+.ant-input-affix-wrapper:focus-within,
+.ant-input:focus-visible,
+.ant-select-focused .ant-select-selector,
+.ant-select-focused {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 1px;
+}
+.ant-menu-item:focus-visible {
+  outline-offset: -2px !important;
+}
+
+/* Links: underline on hover only. */
+a.ant-typography,
+.ant-typography a {
+  text-decoration: none;
+}
+a.ant-typography:hover,
+.ant-typography a:hover {
+  text-decoration: underline;
+}
+
+.ant-form-vertical .ant-form-item-label > label {
+  height: auto !important;
+  line-height: 22px;
+}
+.ant-form-item-explain,
+.ant-form-item-extra {
+  margin-top: 4px;
+}
+.ant-modal-close {
+  width: 32px !important;
+  height: 32px !important;
+}
+/* iOS zooms into inputs under 16px. */
+@media (max-width: 575px) {
+  .ant-input,
+  .ant-input-affix-wrapper input,
+  .ant-select-selection-search-input,
+  .ant-select-selection-item,
+  .ant-select-selection-placeholder {
+    font-size: 16px !important;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}

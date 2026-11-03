@@ -1,0 +1,9 @@
+/* Tailwind's preflight resets `a`, so restore the AntD link look. */
+.link {
+  color: var(--interactive-text);
+  text-decoration: none;
+}
+.link:hover {
+  color: var(--interactive-text-hover);
+  text-decoration: underline;
+}

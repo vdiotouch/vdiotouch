@@ -2,6 +2,7 @@
 .DS_Store
 **/node_modules
 **/package-lock.json
+!frontend/package-lock.json
 **/yarn.lock
 **/pnpm-lock.yaml
 **/.docker-conf

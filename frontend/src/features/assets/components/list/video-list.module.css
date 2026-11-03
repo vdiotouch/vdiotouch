@@ -1,0 +1,207 @@
+/* Shared by the videos table, the mobile cards and the list states. */
+
+.block {
+  display: block;
+}
+.nowrap {
+  white-space: nowrap;
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.search {
+  width: 300px;
+  max-width: 100%;
+}
+@media (max-width: 767px) {
+  .toolbar {
+    padding: 12px;
+  }
+  .search {
+    width: 100%;
+  }
+}
+
+/* Bulk actions: sticks under the 60px app header. */
+.bulkBar {
+  position: sticky;
+  top: 60px;
+  z-index: 4;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  background: var(--interactive-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.bulkCount {
+  margin-right: 4px;
+  color: var(--interactive-text);
+}
+.bulkClear {
+  margin-left: auto;
+}
+
+/* Video column */
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+.summaryText {
+  flex: 1;
+  min-width: 0;
+}
+.titleLink {
+  display: -webkit-box;
+  max-width: 360px;
+  overflow: hidden;
+  color: var(--content);
+  font-weight: 600;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+.titleLink:hover {
+  color: var(--interactive-text-hover);
+  text-decoration: underline;
+}
+.titleLinkTwoLines {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+.videoId {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12px;
+}
+.tags {
+  margin-top: 4px;
+}
+.tag {
+  font-size: 11px;
+}
+.statusHint {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+/* Thumbnail */
+.thumbnail {
+  position: relative;
+  flex: none;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 6px;
+  background: var(--color-neutral-1000);
+  outline: 1px solid var(--border-subtle);
+  outline-offset: -1px;
+}
+.thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.thumbnailIcon {
+  font-size: 22px;
+  color: var(--content-inverted);
+  opacity: 0.4;
+}
+.duration {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgb(3 4 8 / 0.85);
+  color: var(--content-inverted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Mobile cards */
+.card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+.card:first-child {
+  border-top: 0;
+}
+.cardSelected {
+  background: var(--interactive-subtle);
+}
+.cardCheckbox {
+  margin-top: 16px;
+}
+.cardMeta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.cardMetaText {
+  font-size: 12px;
+}
+
+/* Loading */
+.loading {
+  padding: 4px 14px;
+}
+.loadingRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+.loadingRow + .loadingRow {
+  border-top: 1px solid var(--border-subtle);
+}
+.loadingThumb {
+  width: 96px !important;
+  height: 54px !important;
+  flex: none;
+}
+
+/* No results and first-run */
+.noResults {
+  padding: 40px 16px;
+}
+.emptyCard {
+  padding: 32px 0;
+}
+.emptyIcon {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto;
+  border-radius: 20px;
+  background: var(--interactive-subtle);
+  color: var(--interactive);
+  font-size: 36px;
+}
+/* Two classes to beat AntD's `h4.ant-typography`. */
+.emptyCard .emptyTitle {
+  margin: 8px 0 4px;
+}
+.emptySteps {
+  max-width: 760px;
+  margin: 28px auto 0;
+  padding: 0 16px;
+}
