@@ -10,6 +10,8 @@ import { AudioExtractionWorker } from '@/src/worker/audio-extraction.worker';
 import { AudioTranscriptionWorker } from '@/src/worker/audio-transcription.worker';
 import { GenAiClientModule } from '@/src/common/gen-ai-models/gen-ai-client.module';
 import { TranscriptMergerWorker } from '@/src/worker/transcript-merger.worker';
+import { AudioSplitWorker } from '@/src/worker/audio-split.worker';
+import { AudioDownloadService } from '@/src/worker/audio-download.service';
 
 @Module({
   imports: [
@@ -38,6 +40,12 @@ import { TranscriptMergerWorker } from '@/src/worker/transcript-merger.worker';
         }),
       },
       {
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_AUDIO_SPLIT_JOB_QUEUE,
+        }),
+      },
+      {
         name: 'upload-video',
         inject: [AppConfigService],
         useFactory: () => ({
@@ -52,6 +60,8 @@ import { TranscriptMergerWorker } from '@/src/worker/transcript-merger.worker';
     AudioExtractionService,
     AudioExtractionWorker,
     AudioTranscriptionWorker,
+    AudioSplitWorker,
+    AudioDownloadService,
     FileStatusPublisher,
     UploadService,
     TranscriptMergerWorker,

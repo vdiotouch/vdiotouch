@@ -37,6 +37,7 @@ import { UrlValidatorService } from './services/url-validator.service';
 import { HttpModule } from '@nestjs/axios';
 import { FileResolver } from './resolvers/file.resolver';
 import { TranscriptService } from '@/src/api/assets/services/transcript.service';
+import { TranscriptGenerationService } from '@/src/api/assets/services/transcript-generation.service';
 import { CdnService } from '@/src/api/assets/services/cdn.service';
 
 @Module({
@@ -169,6 +170,17 @@ import { CdnService } from '@/src/api/assets/services/cdn.service';
         }),
       },
       {
+        name: 'audio-split',
+        inject: [AppConfigService],
+        useFactory: () => ({
+          name: AppConfigService.appConfig.BULL_AUDIO_SPLIT_JOB_QUEUE,
+          defaultJobOptions: {
+            removeOnComplete: true,
+            removeOnFail: true,
+          },
+        }),
+      },
+      {
         name: 'audio-transcript-merge',
         inject: [AppConfigService],
         useFactory: () => ({
@@ -226,6 +238,10 @@ import { CdnService } from '@/src/api/assets/services/cdn.service';
     }),
     BullBoardModule.forFeature({
       name: 'audio-transcription',
+      adapter: BullMQAdapter,
+    }),
+    BullBoardModule.forFeature({
+      name: 'audio-split',
       adapter: BullMQAdapter,
     }),
     BullBoardModule.forFeature({
@@ -342,6 +358,7 @@ import { CdnService } from '@/src/api/assets/services/cdn.service';
     SignedUrlGeneratorService,
     UrlValidatorService,
     TranscriptService,
+    TranscriptGenerationService,
     CdnService,
   ],
   exports: [AssetRepository, FileRepository],

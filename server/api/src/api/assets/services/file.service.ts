@@ -4,15 +4,12 @@ import { AssetService } from '@/src/api/assets/services/asset.service';
 import { JobManagerService } from '@/src/api/assets/services/job-manager.service';
 import { Injectable } from '@nestjs/common';
 import mongoose from 'mongoose';
-import { Constants, terminal, Utils } from 'video-touch-common';
+import { Constants } from 'video-touch-common';
 import { WebhookService } from '@/src/api/webhook/services/webhook.service';
-import fs from 'fs';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { AssetDocument } from '@/src/api/assets/schemas/assets.schema';
-import { FileMapper } from '@/src/api/assets/mapper/file.mapper';
-import { FILE_TYPE } from 'video-touch-common/dist/constants';
-import { getTranscriptFileName } from 'video-touch-common/dist/utils';
 import { TranscriptService } from '@/src/api/assets/services/transcript.service';
+import { TranscriptGenerationService } from '@/src/api/assets/services/transcript-generation.service';
 import { getCdnFileUrl } from '@/src/common/utils';
 import { CdnService } from './cdn.service';
 
@@ -24,6 +21,7 @@ export class FileService {
     private jobManagerService: JobManagerService,
     private webhookService: WebhookService,
     private transcriptService: TranscriptService,
+    private transcriptGenerationService: TranscriptGenerationService,
     private cdnService: CdnService
   ) {}
 
@@ -76,7 +74,7 @@ export class FileService {
       updatedFile.latest_status === Constants.FILE_STATUS.READY &&
       assetDocument.with_transcription
     ) {
-      this.checkForTranscriptionGeneration(updatedFile, assetDocument)
+      this.checkForTranscriptionGeneration(assetDocument)
         .then()
         .catch((err) => {
           console.log('error while checking transcription generation', err);
@@ -159,6 +157,17 @@ export class FileService {
         .then()
         .catch((err) => {
           console.log('error while generating transcript for asset', err);
+        });
+    }
+
+    if (
+      updatedFile.type === Constants.FILE_TYPE.TRANSCRIPT &&
+      updatedFile.latest_status === Constants.FILE_STATUS.PROCESSING
+    ) {
+      this.createPartialTranscriptsFromChunks(assetId.toString())
+        .then()
+        .catch((err) => {
+          console.log('error while creating partial transcripts from chunks', err);
         });
     }
 
@@ -267,10 +276,25 @@ export class FileService {
           );
         }
       }
-      if (doc.type === FILE_TYPE.PARTIAL_TRANSCRIPT) {
+      if (doc.type === Constants.FILE_TYPE.PARTIAL_TRANSCRIPT) {
         console.log('Transcription file found, proceeding with transcription file generation');
         let jobData = await this.jobManagerService.publishTranscriptionGenerationJob(doc);
         console.log('job published for transcription file ', jobData);
+        if (jobData) {
+          await this.repository.findOneAndUpdate(
+            {
+              _id: doc._id,
+            },
+            {
+              job_id: jobData.id,
+            }
+          );
+        }
+      }
+      if (doc.type === Constants.FILE_TYPE.TRANSCRIPT) {
+        console.log('Transcript file found, proceeding with audio split');
+        let jobData = await this.publishAudioSplitJob(doc);
+        console.log('job published for audio split ', jobData);
         if (jobData) {
           await this.repository.findOneAndUpdate(
             {
@@ -295,101 +319,79 @@ export class FileService {
     });
   }
 
-  async createPartialTranscriptionFile(
-    assetId: string,
-    transcriptFileName: string,
-    audioFileName: string,
-    audioStartTime: string
-  ) {
-    let fileToBeSaved = FileMapper.mapForSave(
-      assetId,
-      transcriptFileName,
-      FILE_TYPE.PARTIAL_TRANSCRIPT,
-      0,
-      0,
-      Constants.FILE_STATUS.QUEUED,
-      'Transcription file queued for processing',
-      0,
-      {
-        audio_start_time: audioStartTime,
-        audio_file_name: audioFileName,
-      }
-    );
-    return this.repository.create(fileToBeSaved);
-  }
-
-  async createTranscriptionFile(assetId: string) {
-    let fileToBeSaved = FileMapper.mapForSave(
-      assetId,
-      getTranscriptFileName(),
-      FILE_TYPE.TRANSCRIPT,
-      0,
-      0,
-      Constants.FILE_STATUS.QUEUED,
-      'Transcription file queued for processing',
-      0
-    );
-    return this.repository.create(fileToBeSaved);
-  }
-
-  async checkForTranscriptionGeneration(updatedFile: FileDocument, asset: AssetDocument) {
-    console.log('Checking for transcription generation settings');
-    if (AppConfigService.appConfig.TRANSCRIPTION_GENERATION_ENABLED && asset.with_transcription) {
-      let audioFilePath = Utils.getLocalMp3Path(
-        updatedFile.asset_id.toString(),
-        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY
-      );
-      if (!fs.existsSync(audioFilePath)) {
-        console.log('Audio file does not exist, skipping transcription generation');
-        return;
-      }
-
-      let outputDir = `${Utils.getLocalVideoRootPath(
-        updatedFile.asset_id.toString(),
-        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY
-      )}/audio_chunks/`;
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir);
-      }
-      await this.splitAudio(audioFilePath, outputDir);
-
-      let sortedFiles = fs.readdirSync(outputDir).sort((a, b) => {
-        const numA = parseInt(a.match(/\d+/)?.[0] || '0');
-        const numB = parseInt(b.match(/\d+/)?.[0] || '0');
-        return numA - numB;
-      });
-
-      let startTimeSeconds = 0;
-      for (let i = 0; i < sortedFiles.length; i++) {
-        const chunkInputFilePath = `${outputDir}${sortedFiles[i]}`;
-        await this.createPartialTranscriptionFile(
-          asset._id.toString(),
-          `transcript_${i}.json`,
-          sortedFiles[i],
-          this.formatSecondsToHHMMSS(startTimeSeconds)
-        );
-        startTimeSeconds += AppConfigService.appConfig.AUDIO_CHUNK_DURATION_IN_SEC;
-        console.log(`Created transcription file for chunk: ${chunkInputFilePath}`);
-      }
-
-      await this.createTranscriptionFile(asset._id.toString());
-    } else {
-      console.log('transcription generation is disabled. Skipping transcription file creation.');
+  /**
+   * The split job needs the audio file's CDN url as a fallback for when the local copy has
+   * already been cleaned up off the shared temp volume.
+   */
+  async publishAudioSplitJob(transcriptFile: FileDocument) {
+    let audioFile = await this.repository.findOne({
+      asset_id: transcriptFile.asset_id,
+      type: Constants.FILE_TYPE.AUDIO,
+    });
+    if (!audioFile) {
+      console.log('no audio file found for asset, split job will have to rely on the local copy');
     }
+    let audioUrl = audioFile ? getCdnFileUrl(audioFile, CdnService.getCdnBaseUrl()) : '';
+    return this.jobManagerService.publishAudioSplitJob(transcriptFile, audioUrl);
   }
 
-  async splitAudio(inputFilePath: string, outputDir: string) {
-    console.log(`Splitting audio file ${inputFilePath} into directory ${outputDir}`);
-    const command = `ffmpeg -i ${inputFilePath} -f segment -segment_time ${AppConfigService.appConfig.AUDIO_CHUNK_DURATION_IN_SEC} -c copy ${outputDir}%03d.mp3`;
-    await terminal(command);
-    console.log('Audio splitting completed');
+  /**
+   * Runs when audio-worker reports the split is done. FILE_STATUS has no distinct "split done"
+   * value and transcript-merger.worker publishes PROCESSING on this same file when the merge
+   * starts, so the guard is what stops the merge from re-creating the chunks and looping.
+   */
+  async createPartialTranscriptsFromChunks(assetId: string) {
+    let hasPartialTranscripts = await this.transcriptGenerationService.hasPartialTranscripts(assetId);
+    if (hasPartialTranscripts) {
+      console.log('partial transcripts already exist for asset, skipping chunk fan-out ', assetId);
+      return;
+    }
+
+    let chunkNames = this.transcriptGenerationService.readChunkNames(assetId);
+    if (chunkNames.length === 0) {
+      // the worker only reports the split done once it has counted chunks, so the directory
+      // going empty in between means something removed it — fail loudly rather than leave the
+      // transcript file sitting in PROCESSING forever
+      let transcriptFile = await this.getTranscriptFile(assetId);
+      if (transcriptFile) {
+        await this.updateFileStatus(
+          transcriptFile._id.toString(),
+          Constants.FILE_STATUS.FAILED,
+          'No audio chunks found after split'
+        );
+      }
+      throw new Error(`No audio chunks found for asset ${assetId}`);
+    }
+    console.log(`creating ${chunkNames.length} partial transcript files for asset `, assetId);
+    return this.transcriptGenerationService.createPartialTranscriptFiles(assetId, chunkNames);
   }
 
-  formatSecondsToHHMMSS(seconds: number): string {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = Math.floor(seconds % 60);
+  async getTranscriptFile(assetId: string): Promise<FileDocument | null> {
+    return this.repository.findOne({
+      asset_id: mongoose.Types.ObjectId(assetId),
+      type: Constants.FILE_TYPE.TRANSCRIPT,
+    });
+  }
 
-    return [hours, minutes, secs].map((unit) => unit.toString().padStart(2, '0')).join(':');
+  /**
+   * The automatic path: the asset's audio has just gone READY and it was ingested with
+   * with_transcription. Creating the transcript file is all that is needed — its save hook
+   * publishes the split job, and audio-worker takes it from there.
+   */
+  async checkForTranscriptionGeneration(asset: AssetDocument) {
+    console.log('Checking for transcription generation settings');
+    if (!AppConfigService.appConfig.TRANSCRIPTION_GENERATION_ENABLED || !asset.with_transcription) {
+      console.log('transcription generation is disabled. Skipping transcription file creation.');
+      return null;
+    }
+    let assetId = asset._id.toString();
+    // a redelivered audio-ready event would otherwise create a second transcript file, and with
+    // it a second split job and a second set of chunks
+    let existingTranscriptFile = await this.getTranscriptFile(assetId);
+    if (existingTranscriptFile) {
+      console.log('transcript file already exists for asset, skipping creation ', assetId);
+      return null;
+    }
+    return this.transcriptGenerationService.createTranscriptFile(assetId);
   }
 }

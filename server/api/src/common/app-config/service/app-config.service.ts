@@ -76,6 +76,7 @@ export class AppConfigService {
       GOTIPATH_CDN_SECRET: this.configService.getOrThrow('GOTIPATH_CDN_SECRET'),
       BULL_DOWNLOAD_FILE_GENERATION_JOB_QUEUE: this.configService.getOrThrow('BULL_DOWNLOAD_FILE_GENERATION_JOB_QUEUE'),
       BULL_AUDIO_EXTRACTION_JOB_QUEUE: this.configService.getOrThrow('BULL_AUDIO_EXTRACTION_JOB_QUEUE'),
+      BULL_AUDIO_SPLIT_JOB_QUEUE: this.configService.getOrThrow('BULL_AUDIO_SPLIT_JOB_QUEUE'),
       GOOGLE_GENAI_API_KEY: this.configService.get('GOOGLE_GENAI_API_KEY'),
       TRANSCRIPTION_GENERATION_ENABLED: this.configService.get('TRANSCRIPTION_GENERATION_ENABLED', 'false') === 'true',
       GOOGLE_GEN_AI_MODEL: this.configService.get('GOOGLE_GEN_AI_MODEL'),

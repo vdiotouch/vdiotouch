@@ -8,6 +8,7 @@ import { Queue } from 'bullmq';
 import { v4 as uuidv4 } from 'uuid';
 import { minutesToMilliseconds } from '@/src/common/utils';
 import { AssetDocument } from '@/src/api/assets/schemas/assets.schema';
+import { AudioSplitJobModel } from '@/src/api/assets/models/audio-split-job.model';
 
 @Injectable()
 export class JobManagerService {
@@ -24,6 +25,7 @@ export class JobManagerService {
     @InjectQueue('download-file-generation') private downloadFileGenerationQueue: Queue,
     @InjectQueue('extract-audio') private audioExtractionQueue: Queue,
     @InjectQueue('audio-transcription') private audioTranscriptionQueue: Queue,
+    @InjectQueue('audio-split') private audioSplitQueue: Queue,
     @InjectQueue('audio-transcript-merge') private transcriptMergerQueue: Queue
   ) {}
 
@@ -305,6 +307,24 @@ export class JobManagerService {
         },
       }
     );
+  }
+
+  async publishAudioSplitJob(transcriptFile: FileDocument, audioUrl: string) {
+    let audioSplitJob: AudioSplitJobModel = {
+      asset_id: transcriptFile.asset_id.toString(),
+      file_id: transcriptFile._id.toString(),
+      audio_url: audioUrl,
+      chunk_duration_in_sec: AppConfigService.appConfig.AUDIO_CHUNK_DURATION_IN_SEC,
+    };
+    console.log('publishing audio split job for ', audioSplitJob);
+    return this.audioSplitQueue.add(AppConfigService.appConfig.BULL_AUDIO_SPLIT_JOB_QUEUE, audioSplitJob, {
+      jobId: uuidv4(),
+      attempts: AppConfigService.appConfig.RETRY_JOB_ATTEMPT_COUNT,
+      backoff: {
+        type: 'fixed',
+        delay: minutesToMilliseconds(AppConfigService.appConfig.RETRY_JOB_BACKOFF_IN_MINUTE),
+      },
+    });
   }
 
   async publishTranscriptionGenerationJob(transcriptFile: FileDocument) {

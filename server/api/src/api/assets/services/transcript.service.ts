@@ -9,7 +9,7 @@ import { Constants } from 'video-touch-common';
 export class TranscriptService {
   constructor(private fileRepository: FileRepository, private jobManagerService: JobManagerService) {}
 
-  async generateTranscript(assetId: string, transcriptFile: FileDocument) {
+  async generateTranscript(assetId: string, transcriptFile: FileDocument, force: boolean = false) {
     let partialTranscriptFiles = await this.fileRepository.find({
       asset_id: mongoose.Types.ObjectId(assetId),
       type: Constants.FILE_TYPE.PARTIAL_TRANSCRIPT,
@@ -20,6 +20,14 @@ export class TranscriptService {
     console.log('partialTranscriptFiles ', partialTranscriptFiles.length);
     if (!this.checkAllPartialTranscriptsReady(partialTranscriptFiles)) {
       throw new Error('Not all partial transcript files are ready');
+    }
+
+    if (!force) {
+      let claimed = await this.claimMerge(transcriptFile);
+      if (!claimed) {
+        console.log('merge already claimed for transcript file ', transcriptFile._id.toString());
+        return;
+      }
     }
 
     // Sort files by name to ensure correct order (e.g., transcript_0.json, transcript_1.json, etc.)
@@ -42,6 +50,27 @@ export class TranscriptService {
         job_id: jobData.id,
       }
     );
+  }
+
+  /**
+   * Every partial going READY re-runs the all-ready check, so chunks finishing together would
+   * each publish a merge job. findOneAndUpdate is atomic: only the caller that flips the flag
+   * gets a document back, and the rest bail out.
+   *
+   * Claims on meta rather than job_id — job_id already holds the audio-split job id by this
+   * point, having been set when the transcript file was saved.
+   */
+  private async claimMerge(transcriptFile: FileDocument): Promise<boolean> {
+    let claimed = await this.fileRepository.findOneAndUpdate(
+      {
+        _id: transcriptFile._id,
+        'meta.merge_claimed': { $ne: true },
+      },
+      {
+        $set: { 'meta.merge_claimed': true },
+      }
+    );
+    return !!claimed;
   }
 
   private checkAllPartialTranscriptsReady(partialTranscriptFiles: FileDocument[]): boolean {

@@ -138,6 +138,12 @@ export class AssetService {
         type: Constants.FILE_TYPE.PLAYLIST,
       });
 
+      // an asset ingested without transcoding has no playlist files at all, and the comparison
+      // below would read that empty set as "everything failed" on any single file failure
+      if (files.length === 0) {
+        return;
+      }
+
       let failedFiles = files.filter((file) => file.latest_status === Constants.FILE_STATUS.FAILED);
       if (failedFiles.length === files.length) {
         console.log('all files failed');
