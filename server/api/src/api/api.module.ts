@@ -17,6 +17,7 @@ import { IndexModule } from './index/index.module';
 import { WebhookModule } from './webhook/webhook.module';
 import { CdnProvidersModule } from '@/src/common/cdn_providers/cdn-providers.module';
 import { SlaModule } from '@/src/api/sla/sla.module';
+import { adminBasicAuth } from '@/src/common/middlewares/admin-basic-auth.middleware';
 
 @Module({
   imports: [
@@ -36,11 +37,16 @@ import { SlaModule } from '@/src/api/sla/sla.module';
     BullBoardModule.forRoot({
       route: '/queues',
       adapter: ExpressAdapter, // Or FastifyAdapter from `@bull-board/fastify`
+      // The dashboard can retry and delete jobs, so it needs the admin login.
+      middleware: adminBasicAuth,
     }),
-    GraphQLModule.forRoot<any>({
+    GraphQLModule.forRootAsync<any>({
       driver: ApolloDriver,
-      autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
-      graphiql: true,
+      inject: [AppConfigService],
+      useFactory: () => ({
+        autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
+        graphiql: AppConfigService.appConfig.NODE_ENV !== 'production',
+      }),
     }),
     HttpClientsModule,
     IndexModule,

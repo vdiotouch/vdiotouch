@@ -11,7 +11,7 @@ export const LIST_WEBHOOKS = /* GraphQL */ `
       webhooks {
         _id
         url
-        secret_token
+        has_secret
         created_at
         updated_at
       }
@@ -29,7 +29,7 @@ export const CREATE_WEBHOOK = /* GraphQL */ `
     CreateWebhook(createWebhookInput: { url: $url, secret_token: $secret_token }) {
       _id
       url
-      secret_token
+      has_secret
       created_at
       updated_at
     }
@@ -44,7 +44,7 @@ export const UPDATE_WEBHOOK = /* GraphQL */ `
     ) {
       _id
       url
-      secret_token
+      has_secret
       created_at
       updated_at
     }

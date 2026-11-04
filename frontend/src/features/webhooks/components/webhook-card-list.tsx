@@ -22,7 +22,7 @@ export function WebhookCardList({ webhooks, onEdit, onDelete }: WebhookCardListP
               {webhook.url}
             </Typography.Text>
             <div className={styles.cardMeta}>
-              <SecretStatus hasSecret={!!webhook.secret_token} />
+              <SecretStatus hasSecret={webhook.has_secret} />
               <Typography.Text type="secondary" className={styles.small}>
                 Added {formatDate(webhook.created_at)}
               </Typography.Text>

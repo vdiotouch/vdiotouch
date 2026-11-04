@@ -11,6 +11,9 @@ import { ModuleRef } from '@nestjs/core';
 import { JwtStrategy } from '@/src/api/auth/strategies/jwt.strategy';
 import { LocalStrategy } from '@/src/api/auth/strategies/local.strategy';
 import { UsersResolver } from '@/src/api/auth/resolvers/users.resolver';
+import { JWT_ALGORITHM } from '@/src/api/auth/constants';
+import { AuthRateLimiter } from '@/src/api/auth/services/auth-rate-limiter.service';
+import { AuthRateLimitGuard } from '@/src/api/auth/guards/auth-rate-limit.guard';
 
 @Module({
   imports: [
@@ -18,7 +21,8 @@ import { UsersResolver } from '@/src/api/auth/resolvers/users.resolver';
       inject: [AppConfigService],
       useFactory: () => ({
         secret: AppConfigService.appConfig.JWT_SECRET,
-        signOptions: { expiresIn: AppConfigService.appConfig.JWT_EXPIRATION_TIME_IN_SEC },
+        signOptions: { expiresIn: AppConfigService.appConfig.JWT_EXPIRATION_TIME_IN_SEC, algorithm: JWT_ALGORITHM },
+        verifyOptions: { algorithms: [JWT_ALGORITHM] },
       }),
     }),
     MongooseModule.forFeatureAsync([
@@ -28,10 +32,12 @@ import { UsersResolver } from '@/src/api/auth/resolvers/users.resolver';
         useFactory: (moduleRef: ModuleRef) => {
           let schema = UserSchema;
           schema.pre('save', async function () {
-            let authService = moduleRef.get<AuthService>(AuthService, { strict: false });
-
-            console.log('user pre save hook');
             const user: any = this;
+            // Hash only a new or changed password; hashing an existing hash again would lock the user out.
+            if (!user.isModified('password')) {
+              return;
+            }
+            let authService = moduleRef.get<AuthService>(AuthService, { strict: false });
             user.password = await authService.getHashedPassword(user.password);
           });
           return schema;
@@ -39,7 +45,16 @@ import { UsersResolver } from '@/src/api/auth/resolvers/users.resolver';
       },
     ]),
   ],
-  providers: [UserRepository, AuthService, UserService, JwtStrategy, LocalStrategy, UsersResolver],
+  providers: [
+    UserRepository,
+    AuthService,
+    UserService,
+    JwtStrategy,
+    LocalStrategy,
+    UsersResolver,
+    AuthRateLimiter,
+    AuthRateLimitGuard,
+  ],
   controllers: [AuthController],
   exports: [UserService],
 })

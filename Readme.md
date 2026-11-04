@@ -88,11 +88,19 @@ git clone git@github.com:toufiq-austcse/video-touch.git
      ```
      VIDEO_BASE_URL=
     ```
-* Put your JWT secret key and token expiren value in seconds in the following env's value
+* Put your JWT secret key and token expiren value in seconds in the following env's value. The secret must be at least 32 characters (`openssl rand -base64 48`), or the api won't start.
      ```
     JWT_SECRET=
     JWT_EXPIRATION_TIME_IN_SEC=
      ```     
+* Security settings (see the comments in `example.env`):
+    ```
+    CORS_ORIGINS=http://localhost:3009   # browser origins allowed to call the api
+    TRUST_PROXY=                         # set when the api runs behind a proxy, so log in limits see the real IP
+    NODE_ENV=production                  # turns GraphiQL off
+    SWAGGER_USERNAME=                    # login for /api-doc and /queues; leave empty to turn both off
+    SWAGGER_PASSWORD=
+    ```
 * Run the follwong command
      ```
         docker compose up -d

@@ -1,11 +1,13 @@
 import { CheckCircleFilled, CloseCircleFilled, InfoCircleOutlined } from "@ant-design/icons";
 import { Progress, Typography } from "antd";
 import { tokens } from "@/theme";
-import { MIN_PASSWORD_LENGTH } from "../constants";
+import { MAX_PASSWORD_BYTES, MIN_PASSWORD_LENGTH } from "../constants";
 import { getPasswordStrength, type StrengthScore } from "../lib/password-strength";
+import { isPasswordTooLong, meetsPasswordRule } from "../lib/password-rule";
 import styles from "./password-checklist.module.css";
 
-const RULE = `At least ${MIN_PASSWORD_LENGTH} characters`;
+const MIN_RULE = `At least ${MIN_PASSWORD_LENGTH} characters`;
+const MAX_RULE = `At most ${MAX_PASSWORD_BYTES} characters`;
 
 function meterColor(score: StrengthScore) {
   if (score <= 1) return tokens.danger;
@@ -19,10 +21,13 @@ interface PasswordChecklistProps {
   submitted: boolean;
 }
 
-/** Strength meter and the minimum-length rule, shown under the password field. */
+/** Strength meter and the length rule, shown under the password field. */
 export function PasswordChecklist({ password, submitted }: PasswordChecklistProps) {
   const { score, label } = getPasswordStrength(password);
-  const meetsRule = password.length >= MIN_PASSWORD_LENGTH;
+  const meetsRule = meetsPasswordRule(password);
+  // Only a password that is too long shows the maximum; otherwise the minimum is the rule to meet.
+  const tooLong = isPasswordTooLong(password);
+  const rule = tooLong ? MAX_RULE : MIN_RULE;
 
   return (
     <div className={styles.checklist}>
@@ -46,15 +51,15 @@ export function PasswordChecklist({ password, submitted }: PasswordChecklistProp
       <div className={styles.rule}>
         {meetsRule ? (
           <Typography.Text type="success">
-            <CheckCircleFilled aria-hidden="true" /> {RULE}
+            <CheckCircleFilled aria-hidden="true" /> {rule}
           </Typography.Text>
-        ) : submitted ? (
+        ) : submitted || tooLong ? (
           <Typography.Text type="danger">
-            <CloseCircleFilled aria-hidden="true" /> {RULE}
+            <CloseCircleFilled aria-hidden="true" /> {rule}
           </Typography.Text>
         ) : (
           <Typography.Text type="secondary">
-            <InfoCircleOutlined aria-hidden="true" /> {RULE}
+            <InfoCircleOutlined aria-hidden="true" /> {rule}
           </Typography.Text>
         )}
       </div>

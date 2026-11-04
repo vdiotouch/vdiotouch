@@ -20,7 +20,7 @@ export class WebhookMapper {
     return {
       _id: webhookDocument._id.toString(),
       url: webhookDocument.url,
-      secret_token: webhookDocument.secret_token,
+      has_secret: !!webhookDocument.secret_token,
       created_at: webhookDocument.createdAt,
       updated_at: webhookDocument.updatedAt,
     };

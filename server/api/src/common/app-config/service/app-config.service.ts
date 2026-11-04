@@ -4,6 +4,20 @@ import { EnvironmentVariables } from '../environment';
 import { Constants } from 'video-touch-common';
 import { CDN_PROVIDERS } from '@/src/common/constants';
 
+const MIN_JWT_SECRET_LENGTH = 32;
+/** The frontend's dev server and docker-compose port. */
+const DEFAULT_CORS_ORIGINS = 'http://localhost:3009';
+/** Trust X-Forwarded-For only from proxies on the same machine or a private network (docker, nginx). */
+const DEFAULT_TRUST_PROXY = 'loopback, linklocal, uniquelocal';
+
+/** TRUST_PROXY accepts true/false, a hop count, or a list of trusted addresses/subnets. */
+function parseTrustProxy(value: string): boolean | number | string {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  if (/^\d+$/.test(value)) return Number(value);
+  return value;
+}
+
 @Injectable()
 export class AppConfigService {
   public static appConfig: EnvironmentVariables;
@@ -28,8 +42,8 @@ export class AppConfigService {
       DB_PASSWORD: this.configService.get('DB_PASSWORD', { infer: true }),
       DB_PORT: this.configService.get('DB_PORT', { infer: true }),
       DB_USER: this.configService.get('DB_USER', { infer: true }),
-      SWAGGER_USERNAME: this.configService.get('SWAGGER_USERNAME', 'toufiq'),
-      SWAGGER_PASSWORD: this.configService.get('SWAGGER_PASSWORD', '1010'),
+      SWAGGER_USERNAME: this.configService.get('SWAGGER_USERNAME'),
+      SWAGGER_PASSWORD: this.configService.get('SWAGGER_PASSWORD'),
       RABBIT_MQ_URL: this.configService.getOrThrow('RABBIT_MQ_URL'),
       RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE: this.configService.getOrThrow('RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE'),
       RABBIT_MQ_UPDATE_ASSET_STATUS_ROUTING_KEY: this.configService.getOrThrow(
@@ -116,10 +130,27 @@ export class AppConfigService {
       SLA_MAX_DELIVERY_ATTEMPTS: +this.configService.get('SLA_MAX_DELIVERY_ATTEMPTS', 5),
       SLA_SLACK_WEBHOOK_URL: this.configService.get('SLA_SLACK_WEBHOOK_URL'),
       INTERNAL_API_KEY: this.configService.get('INTERNAL_API_KEY'),
+      NODE_ENV: this.configService.get('NODE_ENV', 'development'),
+      CORS_ORIGINS: this.configService
+        .get('CORS_ORIGINS', DEFAULT_CORS_ORIGINS)
+        .split(',')
+        .map((origin: string) => origin.trim())
+        .filter(Boolean),
+      TRUST_PROXY: parseTrustProxy(this.configService.get('TRUST_PROXY', DEFAULT_TRUST_PROXY)),
     };
+    this.validateJwtConfig();
     this.validateTranscriptionGenerationEnabled();
     this.validateStorageConfig();
     this.validateCDNProviderConfig();
+  }
+
+  validateJwtConfig() {
+    if (AppConfigService.appConfig.JWT_SECRET.length < MIN_JWT_SECRET_LENGTH) {
+      console.error(
+        `JWT_SECRET must be at least ${MIN_JWT_SECRET_LENGTH} characters. Generate one with: openssl rand -base64 48`
+      );
+      process.exit(1);
+    }
   }
 
   validateCDNProviderConfig() {

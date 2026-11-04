@@ -78,7 +78,7 @@ type User {
 type Webhook {
   _id: String!
   url: String!
-  secret_token: String
+  has_secret: Boolean!
   created_at: DateTime!
   updated_at: DateTime!
 }

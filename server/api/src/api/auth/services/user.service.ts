@@ -2,17 +2,18 @@ import { Injectable } from '@nestjs/common';
 import { UserRepository } from '@/src/api/auth/repositories/user.repository';
 import { UserMapper } from '@/src/api/auth/mapper/user.mapper';
 import { Types } from 'mongoose';
+import { normalizeEmail } from '@/src/api/auth/lib/normalize-email';
 
 @Injectable()
 export class UserService {
   constructor(private repository: UserRepository) {}
 
   async getUserEmail(email: string) {
-    return this.repository.findOne({ email });
+    return this.repository.findOne({ email: normalizeEmail(email) });
   }
 
   async createUser(name: string, email: string, password: string) {
-    let userForSaving = UserMapper.buildUserDocumentForSaving(name, email, password);
+    let userForSaving = UserMapper.buildUserDocumentForSaving(name, normalizeEmail(email), password);
     return this.repository.create(userForSaving);
   }
 

@@ -1,15 +1,23 @@
 import { NestFactory } from '@nestjs/core';
 import { ApiModule } from './api/api.module';
 import { Logger, ValidationPipe, VersioningType } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import helmet from 'helmet';
 import morgan from 'morgan';
 import { setupSwagger } from '@/src/common/swagger';
 import { HttpExceptionFilter } from '@/src/common/filters/http-exception.filter';
+import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 
 async function bootstrap() {
-  const app = await NestFactory.create(ApiModule);
+  const app = await NestFactory.create<NestExpressApplication>(ApiModule);
+  const { CORS_ORIGINS, TRUST_PROXY } = AppConfigService.appConfig;
+  // req.ip must be the real client IP, because log in attempts are limited per IP.
+  app.set('trust proxy', TRUST_PROXY);
+  // CSP is off: the api only serves JSON, and Swagger, GraphiQL and the queue dashboard use inline scripts.
+  app.use(helmet({ contentSecurityPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.enableCors({
     credentials: true,
-    origin: true,
+    origin: CORS_ORIGINS,
   });
   let PORT = +process.env.API_PORT || 3000;
   app.enableVersioning({ type: VersioningType.URI });
