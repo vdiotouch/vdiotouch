@@ -1,12 +1,9 @@
-import { Controller, Post, UseGuards } from '@nestjs/common';
+import { Controller, Post } from '@nestjs/common';
 import { CleanupService } from '../services/cleanup.service';
-import { ApiHeader, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JobVerificationService } from '@/src/api/assets/services/job-verification.service';
-import { InternalApiKeyGuard } from '@/src/common/guards/internal-api-key.guard';
 
 @ApiTags('cronjob')
-@ApiHeader({ name: 'x-internal-api-key', required: true })
-@UseGuards(InternalApiKeyGuard)
 @Controller({ version: '1', path: 'cron-jobs' })
 export class CronjobController {
   constructor(

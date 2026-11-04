@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiHeader, ApiOperation, ApiTags } from '@nestjs/swagger';
 import mongoose, { FilterQuery } from 'mongoose';
-import { InternalApiKeyGuard } from '@/src/common/guards/internal-api-key.guard';
+import { InternalApiKeyGuard } from '@/src/api/sla/guards/internal-api-key.guard';
 import { SlaMonitorService } from '@/src/api/sla/services/sla-monitor.service';
 import { SlaAlertRepository } from '@/src/api/sla/repositories/sla-alert.repository';
 import { SlaNotificationRepository } from '@/src/api/sla/repositories/sla-notification.repository';
