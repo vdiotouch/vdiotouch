@@ -40,6 +40,74 @@ HTTP request --+--> Worker (processor-scaler) --> Durable Object (one per slot)
 
 Not used: Queues (BullMQ on Redis stays), D1 / KV (Mongo stays), Workers AI (the GenAI provider stays pluggable).
 
+### 0.1 Durable Object vs Container
+
+The **Container** is the machine that does the work. The **Durable Object (DO)** is the small manager that controls that machine. Only a DO can start a container.
+
+```
+  Worker (processor-scaler)        "We need 3 transcoders for 720p"
+        |
+        |  "slot 0, run!"  "slot 1, run!"  "slot 2, run!"
+        v
+  +-----------+   +-----------+   +-----------+
+  | DO        |   | DO        |   | DO        |   <-- managers: tiny, cheap, no ffmpeg
+  | 720p-0    |   | 720p-1    |   | 720p-2    |       start / watch / keep alive
+  +-----+-----+   +-----+-----+   +-----+-----+
+        | owns          | owns          | owns
+  +-----v-----+   +-----v-----+   +-----v-----+
+  | Container |   | Container |   | Container |   <-- workers: our Docker image,
+  | ffmpeg    |   | ffmpeg    |   | ffmpeg    |       4 vCPU, does the encoding
+  +-----------+   +-----------+   +-----------+
+```
+
+| | Durable Object (manager) | Container (worker) |
+|---|---|---|
+| What it is | A small piece of JavaScript code on Cloudflare | Our Docker image (NestJS worker + ffmpeg) |
+| Who writes it | Us, in `deploy/cloudflare/` (new code) | Already exists: `server/workers/*` (unchanged) |
+| Size | Tiny: no CPU-heavy work | Big: up to 4 vCPU / 12 GiB |
+| Job | Start the container, check every 60 s that it's alive, notice when it exits | Take a job from Redis, encode, upload to R2 |
+| Knows about videos? | No | Yes |
+| How many | One per slot name (`transcode-720p-0`, `-1`, …) | At most one per DO |
+| Lifetime | Wakes up when called or when its timer fires | Runs until the work is done and it has been idle for 60 s |
+
+- **Why both:** Cloudflare's rule is that a container always belongs to a DO, which is the only thing that can start, watch or stop it.
+- **Pool limit for free:** `TRANSCODE_720P_MAX_PROCESSORS=10` means 10 slot names (`720p-0` … `720p-9`), so there are never more than 10 containers.
+
+### 0.2 One video, start to end
+
+```
+ api              Redis            Worker            DO 720p-0             Container 720p-0
+  |                 |             (scaler)               |                        |
+  |--1. add 720p--->|                 |                  |                        |
+  |     job         |                 |                  |                        |
+  |--webhook /scale------------------>|                  |                        |
+  |                 |                 |--2. "run!"------>|                        |
+  |                 |                 |                  |--3. start()----------->|
+  |                 |                 |                  |   set 60 s timer       |  boots
+  |                 |<---------------------------------------------4. take job-----|
+  |                 |                 |                  |                        |  encode
+  |                 |                 |                  |                        |  upload -> R2
+  |<-------------------------------------------------------- READY (RabbitMQ) ----|
+  |                 |                 |                  |--5. timer: alive?----->|
+  |                 |                 |                  |<-- yes, stay awake ----|
+  |                 |                 |                  |   (repeats every 60 s) |
+  |                 |                 |                  |                        |  6. no job
+  |                 |                 |                  |                        |  for 60 s
+  |                 |                 |                  |<------ exit 0 ---------|  (gone)
+  |                 |                 |                  |--7. stop timer, sleep  |
+  |                 |                 |                  |   (costs ~nothing)     |
+```
+
+| Step | Who | What happens |
+|---|---|---|
+| 1 | api | Adds a 720p job to Redis and calls the scaler webhook |
+| 2 | Worker | Sees a backlog, tells DO `720p-0` to "run" |
+| 3 | DO | Starts its container, sets a 60 s timer |
+| 4 | Container | Takes the job, encodes, uploads to R2, reports READY |
+| 5 | DO | Every 60 s: "still running? OK, stay awake" |
+| 6 | Container | No more jobs for 60 s, so it exits |
+| 7 | DO | Sees the exit, stops its timer, goes to sleep |
+
 ## 1. Platform facts that drive the design
 
 | Fact (Cloudflare docs) | Impact on us |
