@@ -4,7 +4,7 @@ Tracks issue [#20](https://github.com/vdiotouch/vdiotouch/issues/20). Checked ag
 
 ## TL;DR
 
-- **Goal:** workers never share a disk. Every file moves through one S3-API bucket (R2, S3, GCS or MinIO), and each of the 9 worker pools scales from 0 up to a max set in env.
+- **Goal:** workers never share a disk. Every file moves through one S3-API bucket (R2 by default; S3 or GCS also work), and each of the 9 worker pools scales from 0 up to a max set in env.
 - **Already done here:** each resolution has its own queue (`process_video_360p … 1080p`) and its own container. The issue's "per-height queue registry" step mostly exists already.
 - **Not in the issue, and blocks stateless:** the API itself reads the shared disk (tus upload, audio chunking, cleanup), and the master `.m3u8` is built by appending to a file on that disk.
 - **Order:** PRs 1–5 make the pipeline stateless and work on docker-compose. PR 6 adds scale-to-zero support. PR 7 is the **Cloudflare Containers** adapter (first target; see [cloudflare-containers-plan.md](./cloudflare-containers-plan.md)). PR 8, Kubernetes + KEDA, comes later.
@@ -68,13 +68,13 @@ api on READY --> rebuild master.m3u8 from READY playlist rows --> PUT videos/{id
 | PR | Title | Main changes | Done when |
 |---|---|---|---|
 | 0 | Common-package bump | Put all 7 packages on `video-touch-common ^5.1.1`; fix compile errors | All 7 `yarn build` / `npm run build` pass |
-| 1 | Storage layer | New `ObjectStorageService` (S3 SDK, `S3_ENDPOINT`, `S3_FORCE_PATH_STYLE`, presigned GET) in api + workers; R2 becomes S3 with an endpoint | Upload and presign work against MinIO and R2 |
+| 1 | Storage layer | New `ObjectStorageService` (S3 SDK, `S3_ENDPOINT`, `S3_FORCE_PATH_STYLE`, presigned GET) in api + workers; R2 becomes S3 with an endpoint | Upload and presign work against R2 |
 | 2 | Source in bucket | Download worker streams to `sources/{id}/source.mp4`; tus uses an S3 store (also fixes the broken tus `Server`); validate and thumbnail read a presigned URL | A video reaches `VALIDATED` with no `temp_videos` mount |
 | 3 | Transcode pools | Ladder → `TRANSCODE_HEIGHTS=720,540,480` (adds 540 to `getHeightWidthMap`); `concurrency: 1`; fetch → encode → upload in the worker; drop `appendManifest`; api writes `master.m3u8` when a playlist goes READY; remove the rendition path from the upload worker | 1 upload → 3 renditions + master in the bucket → asset `READY` |
 | 4 | MP4 + audio stateless | MP4 built from the playlist URL; audio extraction from a presigned URL; **chunking moves to `audio-worker`**; api creates `PARTIAL_TRANSCRIPT` rows from the chunk count in the event | Transcription works with no shared disk |
 | 5 | Remove the shared disk | Drop `TEMP_VIDEO_DIRECTORY` from the api; cleanup cron → bucket deletes; delete `./temp_videos` volumes from compose; `WORKER_ROLE=transcode\|mp4` | `grep TEMP_VIDEO_DIRECTORY server/api` is empty |
 | 6 | Scale contract | `GET /internal/processors/backlog` (bearer `INTERNAL_API_TOKEN`); optional `SCALE_WEBHOOK_URL`; `WorkerIdleExitService`; `enableShutdownHooks()` ×6; `buildRedisConnection` (user / password / TLS) | Endpoint returns `wanted` for all 9 pools |
-| 7 | Cloudflare adapter (first) | `deploy/cloudflare` processor-scaler + container classes; compose split per pool + optional MinIO. Details: [cloudflare-containers-plan.md](./cloudflare-containers-plan.md) | 10 uploads → 30 transcode containers → 0 when done |
+| 7 | Cloudflare adapter (first) | `deploy/cloudflare` processor-scaler + container classes; compose split per pool (R2 also used locally, no MinIO). Details: [cloudflare-containers-plan.md](./cloudflare-containers-plan.md) | 10 uploads → 30 transcode containers → 0 when done |
 | 8 | Kubernetes adapter (later) | `deploy/kubernetes` Helm + KEDA (metrics-api trigger, `minReplicaCount: 0`) | 10 uploads → 30 transcode pods → 0 when done |
 
 ## 5. The 9 pools
@@ -114,7 +114,7 @@ api on READY --> rebuild master.m3u8 from READY playlist rows --> PUT videos/{id
 
 ## 8. Checklist
 
-- [ ] Answer the 6 open questions in issue #20 (ladder, PR order, api replicas, pool maxes, K8s target, MinIO).
+- [x] Open questions answered (2026-11-18): see the decisions table in [cloudflare-containers-plan.md §10](./cloudflare-containers-plan.md#10-decisions-2026-11-18).
 - [ ] PR 0: bump the common package.
 - [ ] PR 1: storage layer.
 - [ ] PR 2: source in bucket.

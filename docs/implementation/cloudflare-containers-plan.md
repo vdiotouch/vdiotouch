@@ -234,7 +234,7 @@ There is one container class per image (6 classes). A pool is a class + start en
 | `INTERNAL_API_TOKEN` | scaler + api (secret) | bearer for `GET /internal/processors/backlog` |
 | `SCALE_WEBHOOK_TOKEN` | scaler + api (secret) | bearer for `POST /scale` |
 | `SCALE_WEBHOOK_URL` | api | `https://processor-scaler.<acct>.workers.dev/scale` |
-| `REDIS_HOST/PORT/USERNAME/PASSWORD`, `REDIS_TLS=true` | scaler secret → container env | Upstash / Redis Cloud |
+| `REDIS_HOST/PORT/USERNAME/PASSWORD`, `REDIS_TLS=true` | scaler secret → container env | Azure Cache for Redis / Redis Cloud (public TLS endpoint) |
 | `RABBIT_MQ_URL` (amqps) | scaler secret → container env | CloudAMQP |
 | `STORAGE_PROVIDER=s3`, `S3_ENDPOINT`, keys, bucket | scaler secret → container env | `https://<acct>.r2.cloudflarestorage.com` |
 | `WORKER_IDLE_EXIT_SEC=60` | container env | idle exit |
@@ -272,14 +272,29 @@ The api runs unchanged as `ApiContainer`. The same Worker proxies HTTP to it and
 
 Not an option: rewriting the api as a native Worker. NestJS, Mongoose and BullMQ need TCP and Node APIs, so the api stays a container.
 
-## 10. Open questions
+## 10. Decisions (2026-11-18)
 
-| # | Question | Default if no answer |
+| # | Question | Decision |
 |---|---|---|
-| 1 | ~~Where does the api run?~~ | Decided: always-on Cloudflare container (§9) |
-| 2 | Managed Redis: Upstash or Redis Cloud? (BullMQ needs a regular TCP Redis, not Upstash REST) | Redis Cloud |
-| 3 | Max source size we accept? | 8 GB |
-| 4 | Is the 15-min SIGKILL on rollout acceptable for long encodes? | Yes, with BullMQ retry |
+| 1 | Where does the api run? | Always-on Cloudflare container (§9) |
+| 2 | Which managed Redis? | Any cloud's managed Redis (AWS / Azure / Google Cloud), TCP + TLS. **Must be reachable from the internet** (see note) |
+| 3 | Max source size? | 8 GB (`MAX_SOURCE_SIZE_GB=8`) |
+| 4 | Is the 15-min SIGKILL on rollout OK for long encodes? | Yes, BullMQ retry; use the `durable_object` policy |
+| 5 | Resolutions? | 720 / 540 / 480 (`TRANSCODE_HEIGHTS`) |
+| 6 | Pool maxes? | Defaults in §4 |
+| 7 | MinIO for local dev? | No, use R2 everywhere, including local |
+| 8 | Cloudflare or Kubernetes first? | Cloudflare first; Kubernetes later |
+
+Note on Redis: Cloudflare containers reach Redis over the public internet.
+
+| Provider | Public endpoint? | Usable from Cloudflare |
+|---|---|---|
+| Azure Cache for Redis | Yes (TLS port 6380, access key) | Yes |
+| AWS ElastiCache | No, VPC only | Only via an extra proxy / VPN; avoid |
+| Google Memorystore | No, private IP only | Only via an extra proxy / VPN; avoid |
+| Redis Cloud (runs on AWS / GCP / Azure) | Yes (TLS, password) | Yes |
+
+The CF-0 spike checks the chosen provider first.
 
 ## 11. Checklist
 
