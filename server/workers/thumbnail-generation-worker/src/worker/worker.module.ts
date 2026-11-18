@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
+import { buildRedisConnection } from '@/src/common/app-config/build-redis-connection';
+import { WorkerIdleExitService } from '@/src/common/idle-exit/worker-idle-exit.service';
 import { AppConfigModule } from '@/src/common/app-config/app-config.module';
 import { RabbitMQModule } from '@/src/common/rabbit-mq/rabbit-mq.module';
 import { ThumbnailGenerationWorker } from '@/src/worker/thumbnail-generation.worker';
@@ -10,15 +13,13 @@ import { R2Module } from '@/src/common/r2/r2.module';
 
 @Module({
   imports: [
+    DiscoveryModule,
     AppConfigModule,
     R2Module,
     BullModule.forRootAsync({
       inject: [AppConfigService],
       useFactory: () => ({
-        connection: {
-          host: AppConfigService.appConfig.REDIS_HOST,
-          port: AppConfigService.appConfig.REDIS_PORT,
-        },
+        connection: buildRedisConnection(AppConfigService.appConfig),
       }),
     }),
     BullModule.registerQueueAsync({
@@ -33,6 +34,6 @@ import { R2Module } from '@/src/common/r2/r2.module';
     AwsModule,
   ],
   controllers: [],
-  providers: [ThumbnailGenerationWorker],
+  providers: [ThumbnailGenerationWorker, WorkerIdleExitService],
 })
 export class WorkerModule {}

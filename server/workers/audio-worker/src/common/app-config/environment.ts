@@ -10,6 +10,12 @@ export interface EnvironmentVariables {
   BULL_AUDIO_SPLIT_JOB_QUEUE: string;
   REDIS_HOST: string;
   REDIS_PORT: number;
+  // Optional, for managed Redis. Empty locally.
+  REDIS_USERNAME?: string;
+  REDIS_PASSWORD?: string;
+  REDIS_TLS: boolean;
+  // Seconds without an active job before the process exits. Empty or 0 = never (docker-compose).
+  WORKER_IDLE_EXIT_SEC: number;
   TRANSCRIPTION_GENERATION_ENABLED: boolean;
   GOOGLE_GEN_AI_MODEL: string;
   GOOGLE_GENAI_API_KEY: string;

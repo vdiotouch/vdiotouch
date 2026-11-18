@@ -17,6 +17,7 @@ import { IndexModule } from './index/index.module';
 import { WebhookModule } from './webhook/webhook.module';
 import { CdnProvidersModule } from '@/src/common/cdn_providers/cdn-providers.module';
 import { SlaModule } from '@/src/api/sla/sla.module';
+import { buildRedisConnection } from '@/src/common/app-config/build-redis-connection';
 
 @Module({
   imports: [
@@ -26,10 +27,7 @@ import { SlaModule } from '@/src/api/sla/sla.module';
     BullModule.forRootAsync({
       inject: [AppConfigService],
       useFactory: () => ({
-        connection: {
-          host: AppConfigService.appConfig.REDIS_HOST,
-          port: AppConfigService.appConfig.REDIS_PORT,
-        },
+        connection: buildRedisConnection(AppConfigService.appConfig),
       }),
     }),
     CdnProvidersModule,

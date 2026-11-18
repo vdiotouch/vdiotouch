@@ -38,6 +38,10 @@ import { HttpModule } from '@nestjs/axios';
 import { FileResolver } from './resolvers/file.resolver';
 import { TranscriptService } from '@/src/api/assets/services/transcript.service';
 import { CdnService } from '@/src/api/assets/services/cdn.service';
+import { ProcessorController } from '@/src/api/assets/controllers/processor.controller';
+import { ProcessorBacklogService } from '@/src/api/assets/services/processor-backlog.service';
+import { ScaleWebhookService } from '@/src/api/assets/services/scale-webhook.service';
+import { InternalApiKeyGuard } from '@/src/api/sla/guards/internal-api-key.guard';
 
 @Module({
   imports: [
@@ -319,7 +323,7 @@ import { CdnService } from '@/src/api/assets/services/cdn.service';
     }),
     WebhookModule,
   ],
-  controllers: [UploadController, AssetController, CronjobController],
+  controllers: [UploadController, AssetController, CronjobController, ProcessorController],
   providers: [
     AssetRepository,
     FileRepository,
@@ -343,6 +347,9 @@ import { CdnService } from '@/src/api/assets/services/cdn.service';
     UrlValidatorService,
     TranscriptService,
     CdnService,
+    ProcessorBacklogService,
+    ScaleWebhookService,
+    InternalApiKeyGuard,
   ],
   exports: [AssetRepository, FileRepository],
 })
