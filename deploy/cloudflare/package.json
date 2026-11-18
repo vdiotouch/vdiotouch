@@ -1,0 +1,20 @@
+{
+  "name": "vdio-touch-cloudflare",
+  "private": true,
+  "description": "Cloudflare Containers adapter: api front door + autoscaler for every worker pool",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write \"*/src/**/*.ts\" \"spike/container/*.mjs\"",
+    "spike:deploy": "wrangler deploy --config spike/wrangler.jsonc",
+    "scaler:deploy": "wrangler deploy --config processor-scaler/wrangler.jsonc",
+    "scaler:secrets": "wrangler secret bulk --config processor-scaler/wrangler.jsonc",
+    "scaler:tail": "wrangler tail --config processor-scaler/wrangler.jsonc",
+    "scaler:containers": "wrangler containers list"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20261103.1",
+    "prettier": "3.9.10",
+    "typescript": "5.9.3",
+    "wrangler": "4.157.0"
+  }
+}

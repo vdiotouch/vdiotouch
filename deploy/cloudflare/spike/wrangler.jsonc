@@ -1,0 +1,26 @@
+// CF-0 spike: one container that checks outbound TCP to Redis, RabbitMQ and MongoDB.
+// Secrets: REDIS_HOST, REDIS_PORT, REDIS_USERNAME, REDIS_PASSWORD, REDIS_TLS, RABBIT_MQ_URL, MONGO_DB_URL.
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "vdio-touch-connectivity-spike",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "containers": [
+    {
+      "name": "connectivity-check",
+      "image": "./container/Dockerfile",
+      "instance_type": "lite",
+      "max_instances": 1
+    }
+  ],
+  "exports": {
+    "ConnectivityCheckContainer": {
+      "type": "durable-object",
+      "storage": "sqlite",
+      "container": "connectivity-check"
+    }
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "CONNECTIVITY_CHECK", "class_name": "ConnectivityCheckContainer" }]
+  }
+}
