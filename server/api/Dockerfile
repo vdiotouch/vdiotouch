@@ -1,5 +1,5 @@
 
-FROM node:20 as base
+FROM node:22 as base
 
 WORKDIR /app
 COPY package.json \
@@ -26,7 +26,7 @@ RUN yarn
 RUN yarn build
 
 # use one of the smallest images possible
-FROM node:20-alpine
+FROM node:22-alpine
 RUN apk add ffmpeg
 # get package.json from base
 COPY --from=base /app/package.json ./
