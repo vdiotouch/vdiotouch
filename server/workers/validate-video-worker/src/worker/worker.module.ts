@@ -7,6 +7,7 @@ import { ValidateVideoWorker } from '@/src/worker/validate-video.worker';
 import { BullModule } from '@nestjs/bullmq';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { RabbitMQModule } from '../common/rabbit-mq/rabbit-mq.module';
+import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { RabbitMQModule } from '../common/rabbit-mq/rabbit-mq.module';
       }),
     }),
     RabbitMQModule,
+    ObjectStorageModule,
   ],
   controllers: [],
   providers: [ValidateVideoWorker, WorkerIdleExitService],

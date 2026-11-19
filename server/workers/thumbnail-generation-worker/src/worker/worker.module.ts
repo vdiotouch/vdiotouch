@@ -10,6 +10,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { BunnyModule } from '@/src/common/bunny/bunny.module';
 import { R2Module } from '@/src/common/r2/r2.module';
+import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { R2Module } from '@/src/common/r2/r2.module';
     RabbitMQModule,
     BunnyModule,
     AwsModule,
+    ObjectStorageModule,
   ],
   controllers: [],
   providers: [ThumbnailGenerationWorker, WorkerIdleExitService],

@@ -42,6 +42,8 @@ export class AppConfigService {
       AWS_REGION: this.configService.get('AWS_REGION'),
       AWS_SECRET_ACCESS_KEY: this.configService.get('AWS_SECRET_ACCESS_KEY'),
       AWS_S3_BUCKET_NAME: this.configService.get('AWS_S3_BUCKET_NAME'),
+      S3_ENDPOINT: this.configService.get('S3_ENDPOINT'),
+      S3_FORCE_PATH_STYLE: this.configService.get('S3_FORCE_PATH_STYLE', 'false') === 'true',
       VIDEO_BASE_URL: this.configService.getOrThrow('VIDEO_BASE_URL'),
       TEMP_UPLOAD_DIRECTORY: this.configService.getOrThrow('TEMP_UPLOAD_DIRECTORY'),
       RABBIT_MQ_UPDATE_ASSET_ROUTING_KEY: this.configService.getOrThrow('RABBIT_MQ_UPDATE_ASSET_ROUTING_KEY'),
