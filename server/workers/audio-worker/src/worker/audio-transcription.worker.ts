@@ -6,6 +6,7 @@ import { Constants, Models, terminal, Utils } from 'video-touch-common';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
 import { AudioTranscriptionProviderFactory } from '@/src/common/gen-ai-models/audio-transcription-provider.factory';
 import * as fs from 'node:fs';
+import { AudioStorageService } from '@/src/worker/audio-storage.service';
 
 @Processor(process.env.BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE, {
   concurrency: 3,
@@ -14,6 +15,7 @@ export class AudioTranscriptionWorker extends WorkerHost implements OnModuleInit
   constructor(
     private fileStatusPublisher: FileStatusPublisher,
     private transcriptionProviderFactory: AudioTranscriptionProviderFactory,
+    private audioStorageService: AudioStorageService,
   ) {
     super();
   }
@@ -45,8 +47,17 @@ export class AudioTranscriptionWorker extends WorkerHost implements OnModuleInit
         console.log(`Created directory for transcript output at ${outputJsonPath}`);
       }
 
+      if (this.audioStorageService.isEnabled()) {
+        // Stateless: the chunk was uploaded by audio extraction, possibly on another machine.
+        await this.audioStorageService.downloadChunk(msg.asset_id, msg.audio_file_name, inputFilePath);
+      }
+
       const provider = this.transcriptionProviderFactory.getProvider();
       await provider.transcribeAudio(inputFilePath, `${outputJsonPath}/${job.data.name}`);
+      if (this.audioStorageService.isEnabled()) {
+        // The merge may run on another machine, so it reads the partial from the bucket.
+        await this.audioStorageService.uploadPartialTranscript(msg.asset_id, msg.name, `${outputJsonPath}/${msg.name}`);
+      }
       this.fileStatusPublisher.publishUpdateFileStatusEvent(
         msg.file_id.toString(),
         'Audio transcription completed',

@@ -7,6 +7,7 @@ import { checkIsLastAttempt } from '@/src/common/utils';
 import { UploadService } from '@/src/worker/upload.service';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
 import { RenditionUploadService } from '@/src/worker/rendition-upload.service';
+import { DownloadFileService } from '@/src/worker/download-file.service';
 
 @Processor(process.env.BULL_PROCESS_VIDEO_JOB_QUEUE, { lockDuration: 1000 * 60 * 60 * 1 }) // 2 hours lock duration
 export class ProcessVideoWorker extends WorkerHost {
@@ -16,6 +17,7 @@ export class ProcessVideoWorker extends WorkerHost {
     private uploadService: UploadService,
     private fileStatusPublisher: FileStatusPublisher,
     private renditionUploadService: RenditionUploadService,
+    private downloadFileService: DownloadFileService,
   ) {
     super();
     console.log('ProcessVideoWorker initialized');
@@ -65,13 +67,25 @@ export class ProcessVideoWorker extends WorkerHost {
         }
       }
       if (msg.type === Constants.FILE_TYPE.DOWNLOAD) {
-        let res = await this.transcodingService.createMp4FromM3u8ByResolution(
-          msg.asset_id.toString(),
-          height,
-          msg.name,
-        );
-        console.log(`video ${height}p download:`, res);
-        await this.uploadService.publishVideoUploadJob(msg.file_id, msg.name, msg.asset_id, height, width, msg.type);
+        if (this.downloadFileService.isEnabled()) {
+          // Stateless: build the MP4 from the bucket rendition and upload it ourselves.
+          let size = await this.downloadFileService.createAndUploadMp4(msg.asset_id.toString(), height, msg.name);
+          this.fileStatusPublisher.publishUpdateFileStatusEvent(
+            msg.file_id.toString(),
+            'File uploaded',
+            size,
+            Constants.FILE_STATUS.READY,
+          );
+        } else {
+          // Shared disk (bunny): build the MP4 locally and let upload-video-worker upload it.
+          let res = await this.transcodingService.createMp4FromM3u8ByResolution(
+            msg.asset_id.toString(),
+            height,
+            msg.name,
+          );
+          console.log(`video ${height}p download:`, res);
+          await this.uploadService.publishVideoUploadJob(msg.file_id, msg.name, msg.asset_id, height, width, msg.type);
+        }
       }
     } catch (e: any) {
       console.log(`error while processing ${height}p`, e, isLastAttempt);

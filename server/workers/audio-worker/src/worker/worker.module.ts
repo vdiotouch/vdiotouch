@@ -14,6 +14,7 @@ import { AudioExtractionWorker } from '@/src/worker/audio-extraction.worker';
 import { AudioTranscriptionWorker } from '@/src/worker/audio-transcription.worker';
 import { GenAiClientModule } from '@/src/common/gen-ai-models/gen-ai-client.module';
 import { TranscriptMergerWorker } from '@/src/worker/transcript-merger.worker';
+import { AudioStorageService } from '@/src/worker/audio-storage.service';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { TranscriptMergerWorker } from '@/src/worker/transcript-merger.worker';
   providers: [
     WorkerIdleExitService,
     AudioExtractionService,
+    AudioStorageService,
     AudioExtractionWorker,
     AudioTranscriptionWorker,
     FileStatusPublisher,
