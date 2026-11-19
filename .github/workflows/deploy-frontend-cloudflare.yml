@@ -1,0 +1,71 @@
+# Deploys the dashboard (frontend/) to Cloudflare Workers Static Assets (deploy/cloudflare/frontend).
+# See deploy/cloudflare/README.md "Frontend" and docs/implementation/frontend-deploy-plan.md.
+#
+# Opt-in: runs only when the repo variable CLOUDFLARE_FRONTEND_DEPLOY is "true".
+# Secrets: CLOUDFLARE_API_TOKEN (Workers edit permission), CLOUDFLARE_ACCOUNT_ID.
+# Runtime settings: taken from deploy/cloudflare/frontend/wrangler.jsonc; a repo variable with the same
+# name (e.g. NEXT_PUBLIC_VIDEO_TOUCH_API_URL) overrides it for this deploy.
+name: Deploy frontend to Cloudflare
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-frontend-cloudflare
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Build and deploy vdio-touch-web
+    if: vars.CLOUDFLARE_FRONTEND_DEPLOY == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate release tag format
+        if: github.event_name == 'release'
+        run: |
+          echo "${{ github.event.release.tag_name }}" | grep -Eq "^[0-9]{4}\.(0?[1-9]|1[0-2])\.[0-9]+$" || (echo "❌ Invalid CalVer tag. Expected format: YYYY.M.PATCH or YYYY.MM.PATCH (e.g. 2026.3.1 or 2026.03.1)" && exit 1)
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Cloudflare tooling
+        working-directory: deploy/cloudflare
+        # No lockfile is committed here (lockfiles are gitignored outside frontend/), so `npm install`, not `npm ci`.
+        run: npm install --no-audit --no-fund
+
+      - name: Build the frontend
+        working-directory: deploy/cloudflare
+        run: npm run web:build
+
+      - name: Deploy to Cloudflare
+        working-directory: deploy/cloudflare
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          NEXT_PUBLIC_VIDEO_TOUCH_API_URL: ${{ vars.NEXT_PUBLIC_VIDEO_TOUCH_API_URL }}
+          NEXT_PUBLIC_VIDEO_LIST_PAGE_SIZE: ${{ vars.NEXT_PUBLIC_VIDEO_LIST_PAGE_SIZE }}
+          NEXT_PUBLIC_UPDATE_DATA_INTERVAL_IN_SECONDS: ${{ vars.NEXT_PUBLIC_UPDATE_DATA_INTERVAL_IN_SECONDS }}
+          AUTH_COOKIE_REFRESH: ${{ vars.AUTH_COOKIE_REFRESH }}
+          SUPPORT_EMAIL: ${{ vars.SUPPORT_EMAIL }}
+          MAX_VIDEO_SIZE_MB: ${{ vars.MAX_VIDEO_SIZE_MB }}
+          DEPLOY_MESSAGE: ${{ github.event.release.tag_name || format('manual run by {0}', github.actor) }}
+        run: |
+          # Same six keys as deploy/cloudflare/frontend/src/index.ts. Only non-empty repo variables override wrangler.jsonc.
+          args=()
+          for key in NEXT_PUBLIC_VIDEO_TOUCH_API_URL NEXT_PUBLIC_VIDEO_LIST_PAGE_SIZE \
+            NEXT_PUBLIC_UPDATE_DATA_INTERVAL_IN_SECONDS AUTH_COOKIE_REFRESH SUPPORT_EMAIL MAX_VIDEO_SIZE_MB; do
+            if [ -n "${!key}" ]; then
+              args+=(--var "${key}:${!key}")
+              echo "override from repo variable: ${key}"
+            fi
+          done
+          # The deploy message shows in the Cloudflare dashboard and `wrangler deployments list`.
+          npx wrangler deploy --config frontend/wrangler.jsonc --message "${DEPLOY_MESSAGE}" "${args[@]}"
