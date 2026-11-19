@@ -8,6 +8,7 @@ import { DownloadVideoJobHandler } from '@/src/worker/download-video.worker';
 import { BullModule } from '@nestjs/bullmq';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { RabbitMQModule } from '@/src/common/rabbit-mq/rabbit-mq.module';
+import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { RabbitMQModule } from '@/src/common/rabbit-mq/rabbit-mq.module';
     }),
     HttpClientsModule,
     RabbitMQModule,
+    ObjectStorageModule,
   ],
   controllers: [],
   providers: [DownloadVideoJobHandler, WorkerIdleExitService],

@@ -18,6 +18,7 @@ import { WebhookModule } from './webhook/webhook.module';
 import { CdnProvidersModule } from '@/src/common/cdn_providers/cdn-providers.module';
 import { SlaModule } from '@/src/api/sla/sla.module';
 import { buildRedisConnection } from '@/src/common/app-config/build-redis-connection';
+import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { buildRedisConnection } from '@/src/common/app-config/build-redis-connec
     IndexModule,
     AssetsModule,
     AwsModule,
+    ObjectStorageModule,
     AuthModule,
     WebhookModule,
     SlaModule,

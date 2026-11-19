@@ -46,6 +46,9 @@ export interface EnvironmentVariables {
   AWS_REGION: string;
   AWS_SECRET_ACCESS_KEY: string;
   AWS_S3_BUCKET_NAME: string;
+  // Optional, STORAGE_PROVIDER=s3 only: another S3-compatible store (e.g. GCS interop). Empty = AWS.
+  S3_ENDPOINT?: string;
+  S3_FORCE_PATH_STYLE: boolean;
   VIDEO_BASE_URL: string;
 
   TEMP_UPLOAD_DIRECTORY: string;

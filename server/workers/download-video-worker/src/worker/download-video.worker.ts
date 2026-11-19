@@ -7,12 +7,15 @@ import { Job } from 'bullmq';
 import { OnModuleInit } from '@nestjs/common';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { RabbitMqService } from '@/src/common/rabbit-mq/service/rabbitmq.service';
+import { ObjectStorageService } from '@/src/common/object-storage/object-storage.service';
+import { getSourceObjectKey } from '@/src/common/object-storage/object-storage-keys';
 
 @Processor(process.env.BULL_DOWNLOAD_JOB_QUEUE)
 export class DownloadVideoJobHandler extends WorkerHost implements OnModuleInit {
   constructor(
     private downloadHttpService: DownloaderHttpService,
     private rabbitMqService: RabbitMqService,
+    private objectStorageService: ObjectStorageService,
   ) {
     super();
   }
@@ -32,6 +35,7 @@ export class DownloadVideoJobHandler extends WorkerHost implements OnModuleInit 
         AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
       );
       await this.download(msg, destinationPath);
+      await this.uploadSourceToBucket(msg.asset_id.toString(), destinationPath);
 
       this.publishUpdateAssetEvent(msg.asset_id, Constants.VIDEO_STATUS.DOWNLOADED, 'Video downloaded');
       return Promise.resolve(null);
@@ -43,6 +47,18 @@ export class DownloadVideoJobHandler extends WorkerHost implements OnModuleInit 
       }
       throw e;
     }
+  }
+
+  /**
+   * Copies the downloaded source to the bucket, where validate / thumbnail read it (stateless).
+   * The local file stays for now: transcode and audio still read the shared disk until they move to the bucket.
+   * Skipped when STORAGE_PROVIDER has no S3 API (bunny); then every step keeps using the shared disk.
+   */
+  async uploadSourceToBucket(assetId: string, localPath: string) {
+    if (!this.objectStorageService.isEnabled()) {
+      return;
+    }
+    await this.objectStorageService.uploadFile(getSourceObjectKey(assetId), localPath);
   }
 
   isLastAttempt(job: Job): boolean {

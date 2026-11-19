@@ -9,6 +9,7 @@ import { AppConfigService } from '@/src/common/app-config/service/app-config.ser
 import { RabbitMQModule } from '../common/rabbit-mq/rabbit-mq.module';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
 import { UploadService } from '@/src/worker/upload.service';
+import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.module';
 import { AudioExtractionWorker } from '@/src/worker/audio-extraction.worker';
 import { AudioTranscriptionWorker } from '@/src/worker/audio-transcription.worker';
 import { GenAiClientModule } from '@/src/common/gen-ai-models/gen-ai-client.module';
@@ -19,6 +20,7 @@ import { TranscriptMergerWorker } from '@/src/worker/transcript-merger.worker';
     DiscoveryModule,
     AppConfigModule,
     RabbitMQModule,
+    ObjectStorageModule,
     BullModule.forRootAsync({
       inject: [AppConfigService],
       useFactory: () => ({

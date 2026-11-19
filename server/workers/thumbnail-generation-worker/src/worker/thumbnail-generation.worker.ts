@@ -8,6 +8,10 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import console from 'node:console';
 import { BunnyHttpService } from '@/src/common/bunny/service/bunny-http.service';
 import { R2ClientService } from '@/src/common/r2/service/r2-client.service';
+import { ObjectStorageService } from '@/src/common/object-storage/object-storage.service';
+import { getSourceObjectKey } from '@/src/common/object-storage/object-storage-keys';
+import fs from 'fs';
+import path from 'path';
 
 @Processor(process.env.BULL_THUMBNAIL_GENERATION_JOB_QUEUE)
 export class ThumbnailGenerationWorker extends WorkerHost {
@@ -16,6 +20,7 @@ export class ThumbnailGenerationWorker extends WorkerHost {
     private rabbitMqService: RabbitMqService,
     private bunnyClientService: BunnyHttpService,
     private r2ClientService: R2ClientService,
+    private objectStorageService: ObjectStorageService,
   ) {
     super();
   }
@@ -32,16 +37,15 @@ export class ThumbnailGenerationWorker extends WorkerHost {
     console.log('ThumbnailGenerationJobHandler', msg);
     try {
       this.publishUpdateFileStatusEvent(msg.file_id, 0, Constants.FILE_STATUS.PROCESSING, 'Processing started');
-      let videoPath = Utils.getLocalVideoMp4Path(
-        msg.asset_id.toString(),
-        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
-      );
+      let videoInput = await this.getSourceVideoInput(msg.asset_id.toString());
       let thumbnailOutputPath = Utils.getLocalThumbnailPath(
         msg.asset_id.toString(),
         AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
       );
+      // The asset folder only exists here if this container also downloaded the source (shared disk).
+      fs.mkdirSync(path.dirname(thumbnailOutputPath), { recursive: true });
 
-      await this.generateThumbnail(videoPath, thumbnailOutputPath);
+      await this.generateThumbnail(videoInput, thumbnailOutputPath);
       let metadata = await this.getMetadata(thumbnailOutputPath);
       Logger.debug(metadata, 'Thumbnail metadata');
 
@@ -90,6 +94,18 @@ export class ThumbnailGenerationWorker extends WorkerHost {
     }
   }
 
+  /**
+   * Where ffmpeg reads the source: a signed URL to the bucket copy (stateless), or the shared temp disk when
+   * object storage is off (bunny) or the asset was downloaded before the bucket copy existed.
+   */
+  async getSourceVideoInput(assetId: string): Promise<string> {
+    let sourceKey = getSourceObjectKey(assetId);
+    if (this.objectStorageService.isEnabled() && (await this.objectStorageService.exists(sourceKey))) {
+      return this.objectStorageService.getSignedReadUrl(sourceKey);
+    }
+    return Utils.getLocalVideoMp4Path(assetId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
+  }
+
   isLastAttempt(job: Job): boolean {
     console.log(`Job ${job.id} attempts made: ${job.attemptsMade}, max attempts: ${job.opts.attempts}`);
 
@@ -102,7 +118,8 @@ export class ThumbnailGenerationWorker extends WorkerHost {
   }
 
   async generateThumbnail(mp4FilePath: string, thumbnailOutPutPath: string): Promise<string> {
-    let thumbnailGenerationCommand = `ffmpeg -i ${mp4FilePath} -vf "thumbnail" -frames:v 1 ${thumbnailOutPutPath}`;
+    // Input quoted: a signed URL contains '&', which the shell would otherwise treat as a command separator.
+    let thumbnailGenerationCommand = `ffmpeg -i "${mp4FilePath}" -vf "thumbnail" -frames:v 1 ${thumbnailOutPutPath}`;
     let showStreamCommandRes = await terminal(thumbnailGenerationCommand);
     console.log('showStreamCommandRes', showStreamCommandRes);
     return thumbnailOutPutPath;
