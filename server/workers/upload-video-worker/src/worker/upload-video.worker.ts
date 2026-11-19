@@ -9,6 +9,8 @@ import fs from 'fs';
 import { BunnyHttpService } from '@/src/common/bunny/service/bunny-http.service';
 import { R2ClientService } from '@/src/common/r2/service/r2-client.service';
 import { Constants, Models, terminal, Utils } from 'video-touch-common';
+import { ObjectStorageService } from '@/src/common/object-storage/object-storage.service';
+import { getSourceObjectKey } from '@/src/common/object-storage/object-storage-keys';
 
 @Processor(process.env.BULL_UPLOAD_JOB_QUEUE, { concurrency: 3 })
 export class VideoUploaderJobHandler extends WorkerHost {
@@ -17,6 +19,7 @@ export class VideoUploaderJobHandler extends WorkerHost {
     private bunnyClientService: BunnyHttpService,
     private r2ClientService: R2ClientService,
     private rabbitMqService: RabbitMqService,
+    private objectStorageService: ObjectStorageService,
   ) {
     super();
   }
@@ -130,8 +133,14 @@ export class VideoUploaderJobHandler extends WorkerHost {
         msg.asset_id.toString(),
         AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
       )}/${msg.asset_id}.mp4`;
+      let sourceKey = getSourceObjectKey(msg.asset_id.toString());
 
-      if (AppConfigService.appConfig.STORAGE_PROVIDER === Constants.STORAGE_PROVIDER.S3) {
+      if (this.objectStorageService.isEnabled() && (await this.objectStorageService.exists(sourceKey))) {
+        // Stateless: the source is already in the bucket, copy it to its playback path. No local file needed.
+        const destinationKey = Utils.getServerSourceFileVideoPath(msg.asset_id.toString(), msg.name);
+        await this.objectStorageService.copyObject(sourceKey, destinationKey);
+        console.log(`source file copied in bucket: ${sourceKey} -> ${destinationKey}`);
+      } else if (AppConfigService.appConfig.STORAGE_PROVIDER === Constants.STORAGE_PROVIDER.S3) {
         let s3SourceFileVideoPath = Utils.getS3UriSourceFileVideoPath(
           msg.asset_id.toString(),
           msg.name,

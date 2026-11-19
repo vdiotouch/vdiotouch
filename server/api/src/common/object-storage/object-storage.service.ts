@@ -43,6 +43,11 @@ export class ObjectStorageService implements OnModuleInit {
     this.bucket = config.bucket;
   }
 
+  /** True when STORAGE_PROVIDER has an S3 API (s3 / r2), i.e. services can share files through the bucket. */
+  isEnabled(): boolean {
+    return this.client !== null;
+  }
+
   /** Uploads a local file. Large files go up as a multipart upload. */
   async uploadFile(key: string, localPath: string, contentType: string = contentTypeForKey(key)): Promise<void> {
     await this.uploadStream(key, fs.createReadStream(localPath), contentType);
@@ -79,6 +84,12 @@ export class ObjectStorageService implements OnModuleInit {
     fs.mkdirSync(path.dirname(localPath), { recursive: true });
     await pipeline(response.Body as Readable, fs.createWriteStream(localPath));
     console.log(`[object-storage] downloaded ${key} -> ${localPath}`);
+  }
+
+  /** Copies an object inside the bucket. Streams through this process, so S3's 5 GB CopyObject limit doesn't apply. */
+  async copyObject(sourceKey: string, destinationKey: string): Promise<void> {
+    const response = await this.getClient().send(new GetObjectCommand({ Bucket: this.bucket, Key: sourceKey }));
+    await this.uploadStream(destinationKey, response.Body as Readable);
   }
 
   /** Time-limited GET URL, e.g. for ffprobe / ffmpeg to read an object without downloading it first. */
