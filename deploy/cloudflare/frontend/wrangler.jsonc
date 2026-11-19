@@ -1,0 +1,32 @@
+// vdio-touch-web: the frontend (frontend/dist) on Cloudflare Workers Static Assets. See ../README.md.
+// Build first: `npm run web:deploy` (from deploy/cloudflare) builds the frontend, then deploys this.
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "vdio-touch-web",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "observability": { "enabled": true },
+
+  "assets": {
+    "directory": "../../../frontend/dist",
+    "binding": "ASSETS",
+    // Unknown paths (e.g. /videos/123) return index.html, so a page reload works.
+    "not_found_handling": "single-page-application",
+    // Only this path runs the Worker; every other request is a free static-asset hit.
+    "run_worker_first": ["/runtime-env.js"]
+  },
+
+  // Runtime settings sent to the browser via /runtime-env.js. None are secret: they all end up in the page.
+  "vars": {
+    "NEXT_PUBLIC_VIDEO_TOUCH_API_URL": "https://api.example.com",
+    "NEXT_PUBLIC_VIDEO_LIST_PAGE_SIZE": "10",
+    "NEXT_PUBLIC_UPDATE_DATA_INTERVAL_IN_SECONDS": "5",
+    "AUTH_COOKIE_REFRESH": "false",
+    "SUPPORT_EMAIL": "",
+    "MAX_VIDEO_SIZE_MB": ""
+  }
+
+  // Custom domain: uncomment once the zone is on Cloudflare. Without it the site is on
+  // https://vdio-touch-web.<account>.workers.dev
+  // "routes": [{ "pattern": "app.example.com", "custom_domain": true }]
+}
