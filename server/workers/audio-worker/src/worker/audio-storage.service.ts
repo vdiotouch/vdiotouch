@@ -14,35 +14,24 @@ import {
 const SOURCE_URL_EXPIRY_SEC = 2 * 60 * 60;
 
 /**
- * The bucket side of the audio pipeline, so extraction, transcription and merge need no shared disk.
- * Every method except isEnabled() / getSourceVideoInput() needs object storage enabled (not bunny).
+ * The bucket side of the audio pipeline: extraction, transcription and merge read and write the bucket only.
+ * TEMP_VIDEO_DIRECTORY is just this container's scratch folder; the callers delete what they write there.
  */
 @Injectable()
 export class AudioStorageService {
   constructor(private objectStorageService: ObjectStorageService) {}
 
-  isEnabled(): boolean {
-    return this.objectStorageService.isEnabled();
-  }
-
-  /**
-   * Where ffmpeg reads the source: a signed URL to the bucket copy (stateless), or the shared temp disk when
-   * object storage is off (bunny) or the asset was downloaded before the bucket copy existed.
-   */
+  /** Where ffmpeg reads the source: a signed URL to the bucket copy written by download-video-worker. */
   async getSourceVideoInput(assetId: string): Promise<string> {
-    let sourceKey = getSourceObjectKey(assetId);
-    if (this.objectStorageService.isEnabled() && (await this.objectStorageService.exists(sourceKey))) {
-      return this.objectStorageService.getSignedReadUrl(sourceKey, SOURCE_URL_EXPIRY_SEC);
-    }
-    return Utils.getLocalVideoMp4Path(assetId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
+    return this.objectStorageService.getSignedReadUrl(getSourceObjectKey(assetId), SOURCE_URL_EXPIRY_SEC);
   }
 
   /**
    * Splits the mp3 like the api's splitAudio did (same command, same 000.mp3… names) and uploads every chunk.
    * Runs before AUDIO READY: the api creates the PARTIAL_TRANSCRIPT rows by listing these chunk keys.
+   * chunksDir is the caller's scratch folder; the caller deletes it.
    */
-  async splitAndUploadChunks(assetId: string, mp3Path: string): Promise<number> {
-    let chunksDir = Utils.getLocalAudioChunksDir(assetId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
+  async splitAndUploadChunks(assetId: string, mp3Path: string, chunksDir: string): Promise<number> {
     // Start clean on a retry: ffmpeg won't overwrite without -y, and stale chunks would be listed by the api.
     fs.rmSync(chunksDir, { recursive: true, force: true });
     fs.mkdirSync(chunksDir, { recursive: true });

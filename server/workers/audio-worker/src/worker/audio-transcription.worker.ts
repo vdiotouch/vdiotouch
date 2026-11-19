@@ -2,7 +2,7 @@ import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { OnModuleInit } from '@nestjs/common';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
-import { Constants, Models, terminal, Utils } from 'video-touch-common';
+import { Constants, Models, Utils } from 'video-touch-common';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
 import { AudioTranscriptionProviderFactory } from '@/src/common/gen-ai-models/audio-transcription-provider.factory';
 import * as fs from 'node:fs';
@@ -37,27 +37,24 @@ export class AudioTranscriptionWorker extends WorkerHost implements OnModuleInit
         Constants.FILE_STATUS.PROCESSING,
       );
 
-      let inputFilePath = `${Utils.getLocalAudioChunksDir(msg.asset_id, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY)}/${job.data.audio_file_name}`;
-      let outputJsonPath = Utils.getLocalPartialTranscriptsDir(
-        msg.asset_id,
-        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
-      );
-      if (!fs.existsSync(outputJsonPath)) {
-        fs.mkdirSync(outputJsonPath, { recursive: true });
-        console.log(`Created directory for transcript output at ${outputJsonPath}`);
-      }
-
-      if (this.audioStorageService.isEnabled()) {
-        // Stateless: the chunk was uploaded by audio extraction, possibly on another machine.
+      // A folder per job: up to 3 transcriptions of the same asset run at once in this process.
+      let assetDir = Utils.getLocalVideoRootPath(msg.asset_id, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
+      let jobDir = `${assetDir}/transcription_${msg.file_id}`;
+      let inputFilePath = `${jobDir}/${msg.audio_file_name}`;
+      let outputJsonPath = `${jobDir}/${msg.name}`;
+      try {
+        // The chunk was uploaded by audio extraction, possibly on another machine.
         await this.audioStorageService.downloadChunk(msg.asset_id, msg.audio_file_name, inputFilePath);
+
+        const provider = this.transcriptionProviderFactory.getProvider();
+        await provider.transcribeAudio(inputFilePath, outputJsonPath);
+        // The merge may run on another machine, so it reads the partial from the bucket.
+        await this.audioStorageService.uploadPartialTranscript(msg.asset_id, msg.name, outputJsonPath);
+      } finally {
+        // Holds only this job's chunk and partial JSON.
+        fs.rmSync(jobDir, { recursive: true, force: true });
       }
 
-      const provider = this.transcriptionProviderFactory.getProvider();
-      await provider.transcribeAudio(inputFilePath, `${outputJsonPath}/${job.data.name}`);
-      if (this.audioStorageService.isEnabled()) {
-        // The merge may run on another machine, so it reads the partial from the bucket.
-        await this.audioStorageService.uploadPartialTranscript(msg.asset_id, msg.name, `${outputJsonPath}/${msg.name}`);
-      }
       this.fileStatusPublisher.publishUpdateFileStatusEvent(
         msg.file_id.toString(),
         'Audio transcription completed',
@@ -90,14 +87,5 @@ export class AudioTranscriptionWorker extends WorkerHost implements OnModuleInit
       return true; // This is the last attempt
     }
     return false; // There are more attempts left
-  }
-
-  async splitAudio(inputFilePath: string, outputDir: string) {
-    // This method can be implemented to split audio files if needed
-    // For now, it's just a placeholder
-    console.log(`Splitting audio file ${inputFilePath} into directory ${outputDir}`);
-    const command = `ffmpeg -i ${inputFilePath} -f segment -segment_time 300 -c copy ${outputDir}%03d.mp3`;
-    await terminal(command);
-    console.log('Audio splitting completed');
   }
 }

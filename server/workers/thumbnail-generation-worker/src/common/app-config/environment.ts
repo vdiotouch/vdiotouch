@@ -21,9 +21,6 @@ export interface EnvironmentVariables {
   // Seconds without an active job before the process exits. Empty or 0 = never (docker-compose).
   WORKER_IDLE_EXIT_SEC: number;
   STORAGE_PROVIDER: string;
-  BUNNY_STORAGE_ZONE_NAME: string;
-  BUNNY_STORAGE_URL: string;
-  BUNNY_ACCESS_KEY: string;
 
   R2_ACCOUNT_ID: string;
   R2_ACCESS_KEY_ID: string;

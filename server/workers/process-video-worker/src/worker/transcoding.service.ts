@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import fs from 'fs';
-import path from 'path';
 import { Utils, terminal } from 'video-touch-common';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { ObjectStorageService } from '@/src/common/object-storage/object-storage.service';
@@ -28,25 +27,17 @@ export class TranscodingService {
     return terminal(command);
   }
 
-  /**
-   * Where ffmpeg reads the source: a signed URL to the bucket copy (stateless), or the shared temp disk when
-   * object storage is off (bunny) or the asset was downloaded before the bucket copy existed.
-   */
+  /** Where ffmpeg reads the source: a signed URL to the bucket copy written by download-video-worker. */
   async getSourceVideoInput(assetId: string): Promise<string> {
-    let sourceKey = getSourceObjectKey(assetId);
-    if (this.objectStorageService.isEnabled() && (await this.objectStorageService.exists(sourceKey))) {
-      return this.objectStorageService.getSignedReadUrl(sourceKey, SOURCE_URL_EXPIRY_SEC);
-    }
-    return Utils.getLocalVideoMp4Path(assetId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
+    return this.objectStorageService.getSignedReadUrl(getSourceObjectKey(assetId), SOURCE_URL_EXPIRY_SEC);
   }
 
   async transcodeVideoByResolution(videoId: string, height: number, width: number) {
     let result = null;
     try {
       let inputFilePath = await this.getSourceVideoInput(videoId);
-      // Created here, not by getLocalResolutionPath (non-recursive): alone in a container, the asset folder is new.
-      let assetFolderPath = Utils.getLocalVideoRootPath(videoId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
-      let outputFolderPath = `${assetFolderPath}/${height}`;
+      // Created recursively: this container's scratch folder has no asset folder yet.
+      let outputFolderPath = this.getLocalRenditionDir(videoId, height);
       fs.mkdirSync(outputFolderPath, { recursive: true });
       result = await this.transcodeVideo(inputFilePath, outputFolderPath, height, width);
     } catch (e: any) {
@@ -56,29 +47,38 @@ export class TranscodingService {
     return result;
   }
 
-  /** The rendition's local playlist ({TEMP}/<id>/<height>/<height>_out.m3u8), the MP4's input. */
-  getLocalPlaylistPath(videoId: string, height: number): string {
-    let assetFolderPath = Utils.getLocalVideoRootPath(videoId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
-    return `${assetFolderPath}/${height}/${Utils.getFileName(height)}`;
+  /** The transcoder's output folder for one rendition ({TEMP}/<id>/<height>). */
+  getLocalRenditionDir(videoId: string, height: number): string {
+    return `${this.getLocalAssetDir(videoId)}/${height}`;
+  }
+
+  /**
+   * Where the mp4 step downloads a rendition ({TEMP}/<id>/mp4-<height>). Separate from the transcoder's folder:
+   * with WORKER_ROLE=all a transcode and an mp4 job for the same asset can run in one process.
+   */
+  getLocalMp4RenditionDir(videoId: string, height: number): string {
+    return `${this.getLocalAssetDir(videoId)}/mp4-${height}`;
   }
 
   /** Where the downloadable MP4 is written ({TEMP}/<id>/<name>). */
   getLocalDownloadFilePath(videoId: string, name: string): string {
-    return `${Utils.getLocalVideoRootPath(videoId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY)}/${name}`;
+    return `${this.getLocalAssetDir(videoId)}/${name}`;
   }
 
-  async createMp4FromM3u8ByResolution(videoId: string, height: number, name: string) {
-    let result = null;
+  /**
+   * Deletes one scratch file or folder this job created. Never the whole asset folder: another job in the same
+   * process may still be using it. A failed delete is logged, not thrown, so it can't fail a finished job.
+   */
+  removeLocalPath(localPath: string) {
     try {
-      let masterPlaylistPath = this.getLocalPlaylistPath(videoId, height);
-      let outputPath = this.getLocalDownloadFilePath(videoId, name);
-      // Created recursively: alone in a container, the asset folder may not exist yet.
-      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
-      result = await this.createMp4FromM3u8(masterPlaylistPath, outputPath);
-    } catch (e: any) {
-      throw new Error(e);
+      fs.rmSync(localPath, { recursive: true, force: true });
+      console.log('scratch removed:', localPath);
+    } catch (e) {
+      console.log('error while removing scratch', localPath, e);
     }
+  }
 
-    return result;
+  private getLocalAssetDir(videoId: string): string {
+    return Utils.getLocalVideoRootPath(videoId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
   }
 }

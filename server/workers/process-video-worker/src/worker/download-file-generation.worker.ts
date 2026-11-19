@@ -1,18 +1,14 @@
-import { TranscodingService } from '@/src/worker/transcoding.service';
 import { Constants, Models } from 'video-touch-common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { checkIsLastAttempt } from '@/src/common/utils';
-import { UploadService } from '@/src/worker/upload.service';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
 import { DownloadFileService } from '@/src/worker/download-file.service';
 
 @Processor(process.env.BULL_DOWNLOAD_FILE_GENERATION_JOB_QUEUE, { lockDuration: 1000 * 60 * 60 * 1 }) // 2 hours lock duration
 export class DownloadFileGenerationWorker extends WorkerHost {
   constructor(
-    private transcodingService: TranscodingService,
     private fileStatusPublisher: FileStatusPublisher,
-    private uploadService: UploadService,
     private downloadFileService: DownloadFileService,
   ) {
     super();
@@ -36,25 +32,13 @@ export class DownloadFileGenerationWorker extends WorkerHost {
         0,
         Constants.FILE_STATUS.PROCESSING,
       );
-      if (this.downloadFileService.isEnabled()) {
-        // Stateless: build the MP4 from the bucket rendition and upload it ourselves.
-        let size = await this.downloadFileService.createAndUploadMp4(msg.asset_id.toString(), height, msg.name);
-        this.fileStatusPublisher.publishUpdateFileStatusEvent(
-          msg.file_id.toString(),
-          'File uploaded',
-          size,
-          Constants.FILE_STATUS.READY,
-        );
-      } else {
-        // Shared disk (bunny): build the MP4 locally and let upload-video-worker upload it.
-        let res = await this.transcodingService.createMp4FromM3u8ByResolution(
-          msg.asset_id.toString(),
-          height,
-          msg.name,
-        );
-        console.log(`video ${height}p download:`, res);
-        await this.uploadService.publishVideoUploadJob(msg.file_id, msg.name, msg.asset_id, height, width, msg.type);
-      }
+      let size = await this.downloadFileService.createAndUploadMp4(msg.asset_id.toString(), height, msg.name);
+      this.fileStatusPublisher.publishUpdateFileStatusEvent(
+        msg.file_id.toString(),
+        'File uploaded',
+        size,
+        Constants.FILE_STATUS.READY,
+      );
     } catch (e: any) {
       console.log(`error while processing ${height}p`, e, isLastAttempt);
 

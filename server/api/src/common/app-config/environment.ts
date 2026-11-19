@@ -53,9 +53,6 @@ export interface EnvironmentVariables {
   S3_FORCE_PATH_STYLE: boolean;
   VIDEO_BASE_URL: string;
 
-  TEMP_UPLOAD_DIRECTORY: string;
-  TEMP_VIDEO_DIRECTORY: string;
-
   CDN_PROVIDER: string;
 
   DEFAULT_THUMBNAIL_URL: string;
@@ -67,7 +64,6 @@ export interface EnvironmentVariables {
   REDIS_USERNAME?: string;
   REDIS_PASSWORD?: string;
   REDIS_TLS: boolean;
-  MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES: number;
   RETRY_JOB_ATTEMPT_COUNT: number;
   RETRY_JOB_BACKOFF_IN_MINUTE: number;
   TRANSCRIPTION_GENERATION_ENABLED: boolean;
@@ -77,11 +73,12 @@ export interface EnvironmentVariables {
   OPENAI_API_KEY: string;
   OPENAI_MODEL: string;
   AUDIO_CHUNK_DURATION_IN_SEC: number;
+  // s3 | r2. Every service shares files through this bucket.
   STORAGE_PROVIDER: string;
 
+  // Still read by the Bunny CDN config check (CDN_PROVIDER=bunny).
   BUNNY_STORAGE_ZONE_NAME: string;
   BUNNY_STORAGE_URL: string;
-  BUNNY_ACCESS_KEY: string;
 
   R2_ACCOUNT_ID: string;
   R2_ACCESS_KEY_ID: string;

@@ -4,13 +4,11 @@ import { buildRedisConnection } from '@/src/common/app-config/build-redis-connec
 import { WorkerIdleExitService } from '@/src/common/idle-exit/worker-idle-exit.service';
 import { AppConfigModule } from '@/src/common/app-config/app-config.module';
 import { TranscodingService } from '@/src/worker/transcoding.service';
-import { ManifestService } from '@/src/worker/manifest.service';
 import { BullModule } from '@nestjs/bullmq';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { RabbitMQModule } from '../common/rabbit-mq/rabbit-mq.module';
 import { buildRoleProcessors } from '@/src/worker/build-role-processors';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
-import { UploadService } from '@/src/worker/upload.service';
 import { RenditionUploadService } from '@/src/worker/rendition-upload.service';
 import { DownloadFileService } from '@/src/worker/download-file.service';
 import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.module';
@@ -35,13 +33,6 @@ import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.
         }),
       },
       {
-        name: 'upload-video',
-        inject: [AppConfigService],
-        useFactory: () => ({
-          name: AppConfigService.appConfig.BULL_UPLOAD_JOB_QUEUE,
-        }),
-      },
-      {
         name: 'download-file-generation',
         inject: [AppConfigService],
         useFactory: () => ({
@@ -55,9 +46,7 @@ import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.
     WorkerIdleExitService,
     ...buildRoleProcessors(process.env.WORKER_ROLE),
     TranscodingService,
-    ManifestService,
     FileStatusPublisher,
-    UploadService,
     RenditionUploadService,
     DownloadFileService,
   ],

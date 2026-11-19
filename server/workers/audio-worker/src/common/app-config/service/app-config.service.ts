@@ -22,7 +22,6 @@ export class AppConfigService {
       REDIS_PASSWORD: this.configService.get('REDIS_PASSWORD'),
       REDIS_TLS: this.configService.get('REDIS_TLS', 'false') === 'true',
       WORKER_IDLE_EXIT_SEC: +this.configService.get('WORKER_IDLE_EXIT_SEC', 0),
-      BULL_UPLOAD_JOB_QUEUE: this.configService.getOrThrow('BULL_UPLOAD_JOB_QUEUE'),
       BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE: this.configService.getOrThrow('BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE'),
       TRANSCRIPTION_GENERATION_ENABLED: this.configService.get('TRANSCRIPTION_GENERATION_ENABLED') === 'true',
       // Must equal the api's AUDIO_CHUNK_DURATION_IN_SEC: the api computes each chunk's start time from it.
@@ -44,7 +43,7 @@ export class AppConfigService {
       CLOUDFLARE_ACCOUNT_ID: this.configService.get('CLOUDFLARE_ACCOUNT_ID'),
       CLOUDFLARE_API_TOKEN: this.configService.get('CLOUDFLARE_API_TOKEN'),
       CLOUDFLARE_AI_MODEL: this.configService.get('CLOUDFLARE_AI_MODEL'),
-      // Object storage (bucket shared by all services). Optional until a job uses it.
+      // Object storage (bucket shared by all services): s3 or r2. Every job reads and writes it.
       STORAGE_PROVIDER: this.configService.get('STORAGE_PROVIDER'),
       AWS_ACCESS_KEY_ID: this.configService.get('AWS_ACCESS_KEY_ID'),
       AWS_SECRET_ACCESS_KEY: this.configService.get('AWS_SECRET_ACCESS_KEY'),

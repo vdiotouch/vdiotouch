@@ -21,8 +21,6 @@ export class AppConfigService {
       RABBIT_MQ_UPDATE_FILE_STATUS_ROUTING_KEY: this.configService.getOrThrow(
         'RABBIT_MQ_UPDATE_FILE_STATUS_ROUTING_KEY',
       ),
-      TEMP_VIDEO_DIRECTORY: this.configService.getOrThrow('TEMP_VIDEO_DIRECTORY'),
-      AWS_PROFILE_NAME: this.configService.get('AWS_PROFILE_NAME'),
       BULL_UPLOAD_JOB_QUEUE: this.configService.getOrThrow('BULL_UPLOAD_JOB_QUEUE'),
       REDIS_HOST: this.configService.getOrThrow('REDIS_HOST'),
       REDIS_PORT: +this.configService.getOrThrow('REDIS_PORT'),
@@ -31,9 +29,6 @@ export class AppConfigService {
       REDIS_TLS: this.configService.get('REDIS_TLS', 'false') === 'true',
       WORKER_IDLE_EXIT_SEC: +this.configService.get('WORKER_IDLE_EXIT_SEC', 0),
       STORAGE_PROVIDER: this.configService.getOrThrow('STORAGE_PROVIDER'),
-      BUNNY_STORAGE_ZONE_NAME: this.configService.get('BUNNY_STORAGE_ZONE_NAME'),
-      BUNNY_STORAGE_URL: this.configService.get('BUNNY_STORAGE_URL'),
-      BUNNY_ACCESS_KEY: this.configService.get('BUNNY_ACCESS_KEY'),
       R2_ACCOUNT_ID: this.configService.get('R2_ACCOUNT_ID'),
       R2_ACCESS_KEY_ID: this.configService.get('R2_ACCESS_KEY_ID'),
       R2_SECRET_ACCESS_KEY: this.configService.get('R2_SECRET_ACCESS_KEY'),

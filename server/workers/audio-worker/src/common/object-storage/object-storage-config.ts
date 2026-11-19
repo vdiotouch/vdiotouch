@@ -24,7 +24,7 @@ export interface ObjectStorageConfig {
 }
 
 /**
- * S3 API settings for the configured STORAGE_PROVIDER, or null when the provider has no S3 API (bunny).
+ * S3 API settings for the configured STORAGE_PROVIDER (s3 or r2), or null for anything else.
  *   r2: R2_* keys, endpoint R2_ENDPOINT or https://<R2_ACCOUNT_ID>.r2.cloudflarestorage.com
  *   s3: AWS_* keys; S3_ENDPOINT / S3_FORCE_PATH_STYLE for other S3-compatible stores (e.g. GCS interop)
  */

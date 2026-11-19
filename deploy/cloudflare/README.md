@@ -7,7 +7,7 @@ Runs the api and all six workers on Cloudflare Containers. Worker pools scale fr
 - `spike/` (CF-0): a single throwaway container that checks outbound TCP to Redis, RabbitMQ and MongoDB. Run it first.
 - `processor-scaler/` (CF-1 to CF-4): one Worker that is the api's public URL, starts worker containers when the api reports a backlog, and runs the api's cron jobs.
 - `server/` stays cloud-neutral. The scaler only uses `GET /api/v1/processors/backlog` and the optional scale webhook.
-- **Not end to end yet:** workers still hand files over through a shared disk (`TEMP_VIDEO_DIRECTORY`). They need main plan PRs 1–5 (stateless on R2) before a video can reach `READY` here.
+- **Stateless:** since main plan PR 5 no container shares a disk; every file goes through the bucket (s3 or r2), so a video can go from import to `READY` here.
 
 ## Layout
 
@@ -104,7 +104,7 @@ npm run scaler:containers                   # running containers
 ## Checklist
 
 - [ ] CF-0 spike: Redis, RabbitMQ and MongoDB all report `"ok": true`.
-- [ ] Main plan PRs 1–5 merged (workers stateless on R2).
+- [x] Main plan PRs 1–5 merged (workers stateless on R2).
 - [ ] `secrets.json` has every key the api and workers read, plus `INTERNAL_API_KEY`, `SCALE_WEBHOOK_TOKEN`, `SCALE_WEBHOOK_URL`, `BULL_PROCESS_VIDEO_JOB_QUEUE`.
 - [ ] After deploy: `GET https://<scaler host>/api/v1/processors/backlog` with `x-internal-api-key` returns all pools.
 - [ ] Upload 1 video → `scaler:containers` shows the pools start → they go back to 0 after ~1–2 min idle.

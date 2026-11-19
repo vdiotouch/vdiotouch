@@ -4,12 +4,9 @@ import { buildRedisConnection } from '@/src/common/app-config/build-redis-connec
 import { WorkerIdleExitService } from '@/src/common/idle-exit/worker-idle-exit.service';
 import { AppConfigModule } from '@/src/common/app-config/app-config.module';
 import { RabbitMQModule } from '@/src/common/rabbit-mq/rabbit-mq.module';
-import { AwsModule } from '@/src/common/aws/aws.module';
 import { VideoUploaderJobHandler } from '@/src/worker/upload-video.worker';
 import { BullModule } from '@nestjs/bullmq';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
-import { BunnyModule } from '@/src/common/bunny/bunny.module';
-import { R2Module } from '@/src/common/r2/r2.module';
 import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.module';
 
 @Module({
@@ -17,9 +14,6 @@ import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.
     DiscoveryModule,
     AppConfigModule,
     RabbitMQModule,
-    AwsModule,
-    BunnyModule,
-    R2Module,
     ObjectStorageModule,
     BullModule.forRootAsync({
       inject: [AppConfigService],

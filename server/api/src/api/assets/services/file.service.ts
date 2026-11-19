@@ -4,9 +4,8 @@ import { AssetService } from '@/src/api/assets/services/asset.service';
 import { JobManagerService } from '@/src/api/assets/services/job-manager.service';
 import { Injectable } from '@nestjs/common';
 import mongoose from 'mongoose';
-import { Constants, terminal, Utils } from 'video-touch-common';
+import { Constants } from 'video-touch-common';
 import { WebhookService } from '@/src/api/webhook/services/webhook.service';
-import fs from 'fs';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { AssetDocument } from '@/src/api/assets/schemas/assets.schema';
 import { FileMapper } from '@/src/api/assets/mapper/file.mapper';
@@ -91,12 +90,10 @@ export class FileService {
     let assetId = updatedFile.asset_id;
 
     if (updatedFile.latest_status == Constants.FILE_STATUS.READY && updatedFile.type === Constants.FILE_TYPE.PLAYLIST) {
-      if (this.masterManifestService.isEnabled()) {
-        // The master lists the READY renditions, so rewrite it before the CDN cache is cleared.
-        await this.masterManifestService.rebuild(assetId.toString()).catch((err) => {
-          console.log('error while writing master playlist for asset ', assetId.toString(), err);
-        });
-      }
+      // The master lists the READY renditions, so rewrite it before the CDN cache is cleared.
+      await this.masterManifestService.rebuild(assetId.toString()).catch((err) => {
+        console.log('error while writing master playlist for asset ', assetId.toString(), err);
+      });
       this.cdnService
         .invalidateCache(updatedFile.asset_id.toString())
         .then(() => {
@@ -350,11 +347,8 @@ export class FileService {
       return;
     }
 
-    const assetId = updatedFile.asset_id.toString();
-    // Stateless: audio-worker already split the mp3 and uploaded the chunks. Shared disk (bunny): split it here.
-    const chunkNames = this.objectStorageService.isEnabled()
-      ? await this.listAudioChunksInBucket(assetId)
-      : await this.splitLocalAudio(assetId);
+    // audio-worker split the mp3 and uploaded the chunks before reporting the audio file READY.
+    const chunkNames = await this.listAudioChunksInBucket(updatedFile.asset_id.toString());
     if (!chunkNames.length) {
       console.log('No audio chunks found, skipping transcription generation');
       return;
@@ -382,35 +376,12 @@ export class FileService {
     return this.sortChunkNames(keys.map((key) => key.slice(prefix.length)));
   }
 
-  /** Splits the mp3 on the shared disk into chunks and returns their file names in playback order. */
-  async splitLocalAudio(assetId: string): Promise<string[]> {
-    let audioFilePath = Utils.getLocalMp3Path(assetId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
-    if (!fs.existsSync(audioFilePath)) {
-      console.log('Audio file does not exist, skipping transcription generation');
-      return [];
-    }
-
-    let outputDir = `${Utils.getLocalVideoRootPath(assetId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY)}/audio_chunks/`;
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir);
-    }
-    await this.splitAudio(audioFilePath, outputDir);
-    return this.sortChunkNames(fs.readdirSync(outputDir));
-  }
-
   private sortChunkNames(names: string[]): string[] {
     return [...names].sort((a, b) => {
       const numA = parseInt(a.match(/\d+/)?.[0] || '0');
       const numB = parseInt(b.match(/\d+/)?.[0] || '0');
       return numA - numB;
     });
-  }
-
-  async splitAudio(inputFilePath: string, outputDir: string) {
-    console.log(`Splitting audio file ${inputFilePath} into directory ${outputDir}`);
-    const command = `ffmpeg -i ${inputFilePath} -f segment -segment_time ${AppConfigService.appConfig.AUDIO_CHUNK_DURATION_IN_SEC} -c copy ${outputDir}%03d.mp3`;
-    await terminal(command);
-    console.log('Audio splitting completed');
   }
 
   formatSecondsToHHMMSS(seconds: number): string {

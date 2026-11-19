@@ -1,4 +1,4 @@
-import { Models, terminal, Utils, Constants } from 'video-touch-common';
+import { Models, terminal, Constants } from 'video-touch-common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import * as console from 'node:console';
 import { Job } from 'bullmq';
@@ -22,7 +22,8 @@ export class ValidateVideoWorker extends WorkerHost {
     let msg: Models.VideoValidationJobModel = job.data as Models.VideoValidationJobModel;
 
     try {
-      let videoInput = await this.getSourceVideoInput(msg.asset_id.toString());
+      // ffprobe reads the bucket copy of the source through a signed URL.
+      let videoInput = await this.objectStorageService.getSignedReadUrl(getSourceObjectKey(msg.asset_id.toString()));
       let metadata = await this.getMetadata(videoInput);
       console.log('metadata', metadata);
       if (!metadata || !metadata.size || !metadata.height || !metadata.width || !metadata.duration) {
@@ -54,18 +55,6 @@ export class ValidateVideoWorker extends WorkerHost {
       }
       throw new Error('Error in video validation job handler: ' + e.message);
     }
-  }
-
-  /**
-   * Where ffprobe reads the source: a signed URL to the bucket copy (stateless), or the shared temp disk when
-   * object storage is off (bunny) or the asset was downloaded before the bucket copy existed.
-   */
-  async getSourceVideoInput(assetId: string): Promise<string> {
-    let sourceKey = getSourceObjectKey(assetId);
-    if (this.objectStorageService.isEnabled() && (await this.objectStorageService.exists(sourceKey))) {
-      return this.objectStorageService.getSignedReadUrl(sourceKey);
-    }
-    return Utils.getLocalVideoMp4Path(assetId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
   }
 
   isLastAttempt(job: Job): boolean {

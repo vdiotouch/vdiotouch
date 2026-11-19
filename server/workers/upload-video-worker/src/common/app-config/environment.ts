@@ -11,8 +11,6 @@ export interface EnvironmentVariables {
   AWS_ACCESS_KEY_ID: string;
   RABBIT_MQ_UPDATE_FILE_STATUS_QUEUE: string;
   RABBIT_MQ_UPDATE_FILE_STATUS_ROUTING_KEY: string;
-  TEMP_VIDEO_DIRECTORY: string;
-  AWS_PROFILE_NAME: string;
   BULL_UPLOAD_JOB_QUEUE: string;
   REDIS_HOST: string;
   REDIS_PORT: number;
@@ -22,10 +20,8 @@ export interface EnvironmentVariables {
   REDIS_TLS: boolean;
   // Seconds without an active job before the process exits. Empty or 0 = never (docker-compose).
   WORKER_IDLE_EXIT_SEC: number;
+  // s3 | r2. Both go through ObjectStorageService (S3 API).
   STORAGE_PROVIDER: string;
-  BUNNY_STORAGE_ZONE_NAME: string;
-  BUNNY_STORAGE_URL: string;
-  BUNNY_ACCESS_KEY: string;
 
   R2_ACCOUNT_ID: string;
   R2_ACCESS_KEY_ID: string;

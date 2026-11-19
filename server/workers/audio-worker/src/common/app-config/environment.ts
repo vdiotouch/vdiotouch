@@ -5,7 +5,6 @@ export interface EnvironmentVariables {
   RABBIT_MQ_URL: string;
   TEMP_VIDEO_DIRECTORY: string;
   BULL_AUDIO_EXTRACTION_JOB_QUEUE: string;
-  BULL_UPLOAD_JOB_QUEUE: string;
   BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE: string;
   BULL_AUDIO_SPLIT_JOB_QUEUE: string;
   REDIS_HOST: string;
@@ -35,7 +34,7 @@ export interface EnvironmentVariables {
   CLOUDFLARE_ACCOUNT_ID: string;
   CLOUDFLARE_API_TOKEN: string;
   CLOUDFLARE_AI_MODEL: string;
-  // Object storage (bucket shared by all services). Optional until a job uses it; empty = disabled.
+  // Object storage (bucket shared by all services): s3 or r2. Every job reads and writes it.
   STORAGE_PROVIDER?: string;
   AWS_ACCESS_KEY_ID?: string;
   AWS_SECRET_ACCESS_KEY?: string;

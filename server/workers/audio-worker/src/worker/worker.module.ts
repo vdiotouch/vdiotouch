@@ -8,7 +8,6 @@ import { BullModule } from '@nestjs/bullmq';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { RabbitMQModule } from '../common/rabbit-mq/rabbit-mq.module';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
-import { UploadService } from '@/src/worker/upload.service';
 import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.module';
 import { AudioExtractionWorker } from '@/src/worker/audio-extraction.worker';
 import { AudioTranscriptionWorker } from '@/src/worker/audio-transcription.worker';
@@ -41,13 +40,6 @@ import { AudioStorageService } from '@/src/worker/audio-storage.service';
           name: AppConfigService.appConfig.BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE,
         }),
       },
-      {
-        name: 'upload-video',
-        inject: [AppConfigService],
-        useFactory: () => ({
-          name: AppConfigService.appConfig.BULL_UPLOAD_JOB_QUEUE,
-        }),
-      },
     ),
     GenAiClientModule,
   ],
@@ -59,7 +51,6 @@ import { AudioStorageService } from '@/src/worker/audio-storage.service';
     AudioExtractionWorker,
     AudioTranscriptionWorker,
     FileStatusPublisher,
-    UploadService,
     TranscriptMergerWorker,
   ],
 })

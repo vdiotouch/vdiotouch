@@ -1,10 +1,7 @@
-import { TranscodingService } from '@/src/worker/transcoding.service';
-import { ManifestService } from '@/src/worker/manifest.service';
 import { Constants, Models, terminal } from 'video-touch-common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { checkIsLastAttempt } from '@/src/common/utils';
-import { UploadService } from '@/src/worker/upload.service';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
 import { RenditionUploadService } from '@/src/worker/rendition-upload.service';
 import { DownloadFileService } from '@/src/worker/download-file.service';
@@ -12,9 +9,6 @@ import { DownloadFileService } from '@/src/worker/download-file.service';
 @Processor(process.env.BULL_PROCESS_VIDEO_JOB_QUEUE, { lockDuration: 1000 * 60 * 60 * 1 }) // 2 hours lock duration
 export class ProcessVideoWorker extends WorkerHost {
   constructor(
-    private transcodingService: TranscodingService,
-    private manifestService: ManifestService,
-    private uploadService: UploadService,
     private fileStatusPublisher: FileStatusPublisher,
     private renditionUploadService: RenditionUploadService,
     private downloadFileService: DownloadFileService,
@@ -41,51 +35,26 @@ export class ProcessVideoWorker extends WorkerHost {
         Constants.FILE_STATUS.PROCESSING,
       );
       if (msg.type === Constants.FILE_TYPE.PLAYLIST) {
-        let res = await this.transcodingService.transcodeVideoByResolution(msg.asset_id.toString(), height, width);
-        console.log(`video ${height}p transcode:`, res);
-
-        if (this.renditionUploadService.isEnabled()) {
-          // Stateless: upload this rendition ourselves; the api writes the master playlist from the READY files.
-          let size = await this.renditionUploadService.uploadRendition(msg.asset_id.toString(), height);
-          this.fileStatusPublisher.publishUpdateFileStatusEvent(
-            msg.file_id.toString(),
-            'File uploaded',
-            size,
-            Constants.FILE_STATUS.READY,
-          );
-        } else {
-          // Shared disk (bunny): append to the shared master playlist and let upload-video-worker upload both.
-          this.manifestService.appendManifest(msg.asset_id.toString(), height);
-          await this.uploadService.publishVideoUploadJob(
-            msg.file_id.toString(),
-            msg.name,
-            msg.asset_id,
-            height,
-            width,
-            msg.type,
-          );
-        }
+        let size = await this.renditionUploadService.transcodeAndUploadRendition(
+          msg.asset_id.toString(),
+          height,
+          width,
+        );
+        this.fileStatusPublisher.publishUpdateFileStatusEvent(
+          msg.file_id.toString(),
+          'File uploaded',
+          size,
+          Constants.FILE_STATUS.READY,
+        );
       }
       if (msg.type === Constants.FILE_TYPE.DOWNLOAD) {
-        if (this.downloadFileService.isEnabled()) {
-          // Stateless: build the MP4 from the bucket rendition and upload it ourselves.
-          let size = await this.downloadFileService.createAndUploadMp4(msg.asset_id.toString(), height, msg.name);
-          this.fileStatusPublisher.publishUpdateFileStatusEvent(
-            msg.file_id.toString(),
-            'File uploaded',
-            size,
-            Constants.FILE_STATUS.READY,
-          );
-        } else {
-          // Shared disk (bunny): build the MP4 locally and let upload-video-worker upload it.
-          let res = await this.transcodingService.createMp4FromM3u8ByResolution(
-            msg.asset_id.toString(),
-            height,
-            msg.name,
-          );
-          console.log(`video ${height}p download:`, res);
-          await this.uploadService.publishVideoUploadJob(msg.file_id, msg.name, msg.asset_id, height, width, msg.type);
-        }
+        let size = await this.downloadFileService.createAndUploadMp4(msg.asset_id.toString(), height, msg.name);
+        this.fileStatusPublisher.publishUpdateFileStatusEvent(
+          msg.file_id.toString(),
+          'File uploaded',
+          size,
+          Constants.FILE_STATUS.READY,
+        );
       }
     } catch (e: any) {
       console.log(`error while processing ${height}p`, e, isLastAttempt);
