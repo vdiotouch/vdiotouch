@@ -12,6 +12,7 @@ import { buildRoleProcessors } from '@/src/worker/build-role-processors';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
 import { UploadService } from '@/src/worker/upload.service';
 import { RenditionUploadService } from '@/src/worker/rendition-upload.service';
+import { DownloadFileService } from '@/src/worker/download-file.service';
 import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.module';
 
 @Module({
@@ -58,6 +59,7 @@ import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.
     FileStatusPublisher,
     UploadService,
     RenditionUploadService,
+    DownloadFileService,
   ],
 })
 export class WorkerModule {}

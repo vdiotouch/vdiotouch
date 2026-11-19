@@ -25,6 +25,8 @@ export class AppConfigService {
       BULL_UPLOAD_JOB_QUEUE: this.configService.getOrThrow('BULL_UPLOAD_JOB_QUEUE'),
       BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE: this.configService.getOrThrow('BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE'),
       TRANSCRIPTION_GENERATION_ENABLED: this.configService.get('TRANSCRIPTION_GENERATION_ENABLED') === 'true',
+      // Must equal the api's AUDIO_CHUNK_DURATION_IN_SEC: the api computes each chunk's start time from it.
+      AUDIO_CHUNK_DURATION_IN_SEC: +this.configService.get('AUDIO_CHUNK_DURATION_IN_SEC', 300),
       GOOGLE_GENAI_API_KEY: this.configService.get('GOOGLE_GENAI_API_KEY'),
       OPENAI_API_KEY: this.configService.get('OPENAI_API_KEY'),
       GOOGLE_GEN_AI_MODEL: this.configService.get('GOOGLE_GEN_AI_MODEL'),

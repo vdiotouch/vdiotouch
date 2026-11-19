@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import fs from 'fs';
+import path from 'path';
 import { Utils, terminal } from 'video-touch-common';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { ObjectStorageService } from '@/src/common/object-storage/object-storage.service';
@@ -21,8 +22,8 @@ export class TranscodingService {
   }
 
   async createMp4FromM3u8(masterPlaylistPath: string, outputPath: string) {
-    // Using ffmpeg to convert local HLS stream to MP4
-    const command = `ffmpeg -y -i ${masterPlaylistPath} -c copy ${outputPath}`;
+    // Using ffmpeg to convert local HLS stream to MP4. Paths quoted: the file name comes from the asset.
+    const command = `ffmpeg -y -i "${masterPlaylistPath}" -c copy "${outputPath}"`;
     console.log('starting local m3u8 to mp4 conversion....');
     return terminal(command);
   }
@@ -55,12 +56,24 @@ export class TranscodingService {
     return result;
   }
 
+  /** The rendition's local playlist ({TEMP}/<id>/<height>/<height>_out.m3u8), the MP4's input. */
+  getLocalPlaylistPath(videoId: string, height: number): string {
+    let assetFolderPath = Utils.getLocalVideoRootPath(videoId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
+    return `${assetFolderPath}/${height}/${Utils.getFileName(height)}`;
+  }
+
+  /** Where the downloadable MP4 is written ({TEMP}/<id>/<name>). */
+  getLocalDownloadFilePath(videoId: string, name: string): string {
+    return `${Utils.getLocalVideoRootPath(videoId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY)}/${name}`;
+  }
+
   async createMp4FromM3u8ByResolution(videoId: string, height: number, name: string) {
     let result = null;
     try {
-      let masterPlaylistPath = `${Utils.getLocalResolutionPath(videoId, height, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY)}/${height}_out.m3u8`;
-      let outputPath =
-        Utils.getLocalVideoRootPath(videoId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY) + `/${name}`;
+      let masterPlaylistPath = this.getLocalPlaylistPath(videoId, height);
+      let outputPath = this.getLocalDownloadFilePath(videoId, name);
+      // Created recursively: alone in a container, the asset folder may not exist yet.
+      fs.mkdirSync(path.dirname(outputPath), { recursive: true });
       result = await this.createMp4FromM3u8(masterPlaylistPath, outputPath);
     } catch (e: any) {
       throw new Error(e);

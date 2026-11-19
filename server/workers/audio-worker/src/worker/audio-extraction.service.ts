@@ -1,15 +1,20 @@
 import { Injectable } from '@nestjs/common';
+import fs from 'fs';
 import { terminal } from 'video-touch-common';
 
 @Injectable()
 export class AudioExtractionService {
   constructor() {}
 
+  /** inputFilePath is a local path or a signed URL (see AudioStorageService.getSourceVideoInput). */
   async extractAudio(inputFilePath: string, outputFolderPath: string) {
+    // Created here: alone in a container, the asset folder doesn't exist yet.
+    fs.mkdirSync(outputFolderPath, { recursive: true });
     // Output file path (e\.g\. audio.m4a)
     const outputAudioPath = `${outputFolderPath}/audio.m4a`;
-    // ffmpeg command for minimal size: mono channel, low bitrate
-    const command = `ffmpeg -y -i ${inputFilePath} -vn -ar 44100 -ac 1 -b:a 64k ${outputAudioPath.replace('.m4a', '.mp3')}`;
+    // ffmpeg command for minimal size: mono channel, low bitrate.
+    // Input quoted: a signed URL contains '&', which the shell would otherwise treat as a command separator.
+    const command = `ffmpeg -y -i "${inputFilePath}" -vn -ar 44100 -ac 1 -b:a 64k ${outputAudioPath.replace('.m4a', '.mp3')}`;
     console.log('Extracting audio with minimal size...');
     return terminal(command);
   }

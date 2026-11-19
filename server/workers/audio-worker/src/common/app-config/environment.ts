@@ -17,6 +17,8 @@ export interface EnvironmentVariables {
   // Seconds without an active job before the process exits. Empty or 0 = never (docker-compose).
   WORKER_IDLE_EXIT_SEC: number;
   TRANSCRIPTION_GENERATION_ENABLED: boolean;
+  // Length of each audio chunk sent for transcription. Must equal the api's value: it computes chunk start times.
+  AUDIO_CHUNK_DURATION_IN_SEC: number;
   GOOGLE_GEN_AI_MODEL: string;
   GOOGLE_GENAI_API_KEY: string;
   GOOGLE_GENAI_TEMPERATURE: number;

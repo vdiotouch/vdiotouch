@@ -111,6 +111,32 @@ export class ObjectStorageService implements OnModuleInit {
     }
   }
 
+  /** Every key under prefix (end it with "/" for a folder), e.g. the chunks of an audio file. */
+  async listKeys(prefix: string): Promise<string[]> {
+    const keys: string[] = [];
+    let continuationToken: string | undefined;
+    do {
+      const command = new ListObjectsV2Command({
+        Bucket: this.bucket,
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      });
+      const page = await this.getClient().send(command);
+      keys.push(...(page.Contents ?? []).map((object) => object.Key as string));
+      continuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (continuationToken);
+    return keys;
+  }
+
+  /** Downloads every object under prefix into localDir, keeping paths relative to prefix. Returns the file count. */
+  async downloadPrefix(prefix: string, localDir: string): Promise<number> {
+    const keys = await this.listKeys(prefix);
+    for (const key of keys) {
+      await this.downloadFile(key, path.join(localDir, key.slice(prefix.length)));
+    }
+    return keys.length;
+  }
+
   /** Deletes every object whose key starts with prefix. Returns the number of objects deleted. */
   async deletePrefix(prefix: string): Promise<number> {
     let deleted = 0;

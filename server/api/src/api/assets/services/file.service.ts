@@ -16,6 +16,8 @@ import { TranscriptService } from '@/src/api/assets/services/transcript.service'
 import { getCdnFileUrl } from '@/src/common/utils';
 import { CdnService } from './cdn.service';
 import { MasterManifestService } from '@/src/api/assets/services/master-manifest.service';
+import { ObjectStorageService } from '@/src/common/object-storage/object-storage.service';
+import { getAudioChunksPrefix } from '@/src/common/object-storage/object-storage-keys';
 
 @Injectable()
 export class FileService {
@@ -26,7 +28,8 @@ export class FileService {
     private webhookService: WebhookService,
     private transcriptService: TranscriptService,
     private cdnService: CdnService,
-    private masterManifestService: MasterManifestService
+    private masterManifestService: MasterManifestService,
+    private objectStorageService: ObjectStorageService
   ) {}
 
   async updateFileStatus(fileId: string, status: string, details: string, size?: number) {
@@ -342,48 +345,65 @@ export class FileService {
 
   async checkForTranscriptionGeneration(updatedFile: FileDocument, asset: AssetDocument) {
     console.log('Checking for transcription generation settings');
-    if (AppConfigService.appConfig.TRANSCRIPTION_GENERATION_ENABLED && asset.with_transcription) {
-      let audioFilePath = Utils.getLocalMp3Path(
-        updatedFile.asset_id.toString(),
-        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY
-      );
-      if (!fs.existsSync(audioFilePath)) {
-        console.log('Audio file does not exist, skipping transcription generation');
-        return;
-      }
-
-      let outputDir = `${Utils.getLocalVideoRootPath(
-        updatedFile.asset_id.toString(),
-        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY
-      )}/audio_chunks/`;
-      if (!fs.existsSync(outputDir)) {
-        fs.mkdirSync(outputDir);
-      }
-      await this.splitAudio(audioFilePath, outputDir);
-
-      let sortedFiles = fs.readdirSync(outputDir).sort((a, b) => {
-        const numA = parseInt(a.match(/\d+/)?.[0] || '0');
-        const numB = parseInt(b.match(/\d+/)?.[0] || '0');
-        return numA - numB;
-      });
-
-      let startTimeSeconds = 0;
-      for (let i = 0; i < sortedFiles.length; i++) {
-        const chunkInputFilePath = `${outputDir}${sortedFiles[i]}`;
-        await this.createPartialTranscriptionFile(
-          asset._id.toString(),
-          `transcript_${i}.json`,
-          sortedFiles[i],
-          this.formatSecondsToHHMMSS(startTimeSeconds)
-        );
-        startTimeSeconds += AppConfigService.appConfig.AUDIO_CHUNK_DURATION_IN_SEC;
-        console.log(`Created transcription file for chunk: ${chunkInputFilePath}`);
-      }
-
-      await this.createTranscriptionFile(asset._id.toString());
-    } else {
+    if (!AppConfigService.appConfig.TRANSCRIPTION_GENERATION_ENABLED || !asset.with_transcription) {
       console.log('transcription generation is disabled. Skipping transcription file creation.');
+      return;
     }
+
+    const assetId = updatedFile.asset_id.toString();
+    // Stateless: audio-worker already split the mp3 and uploaded the chunks. Shared disk (bunny): split it here.
+    const chunkNames = this.objectStorageService.isEnabled()
+      ? await this.listAudioChunksInBucket(assetId)
+      : await this.splitLocalAudio(assetId);
+    if (!chunkNames.length) {
+      console.log('No audio chunks found, skipping transcription generation');
+      return;
+    }
+
+    let startTimeSeconds = 0;
+    for (let i = 0; i < chunkNames.length; i++) {
+      await this.createPartialTranscriptionFile(
+        asset._id.toString(),
+        `transcript_${i}.json`,
+        chunkNames[i],
+        this.formatSecondsToHHMMSS(startTimeSeconds)
+      );
+      startTimeSeconds += AppConfigService.appConfig.AUDIO_CHUNK_DURATION_IN_SEC;
+      console.log(`Created transcription file for chunk: ${chunkNames[i]}`);
+    }
+
+    await this.createTranscriptionFile(asset._id.toString());
+  }
+
+  /** Chunk file names (000.mp3, 001.mp3, …) under audio/<id>/chunks/, in playback order. */
+  async listAudioChunksInBucket(assetId: string): Promise<string[]> {
+    const prefix = getAudioChunksPrefix(assetId);
+    const keys = await this.objectStorageService.listKeys(prefix);
+    return this.sortChunkNames(keys.map((key) => key.slice(prefix.length)));
+  }
+
+  /** Splits the mp3 on the shared disk into chunks and returns their file names in playback order. */
+  async splitLocalAudio(assetId: string): Promise<string[]> {
+    let audioFilePath = Utils.getLocalMp3Path(assetId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
+    if (!fs.existsSync(audioFilePath)) {
+      console.log('Audio file does not exist, skipping transcription generation');
+      return [];
+    }
+
+    let outputDir = `${Utils.getLocalVideoRootPath(assetId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY)}/audio_chunks/`;
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir);
+    }
+    await this.splitAudio(audioFilePath, outputDir);
+    return this.sortChunkNames(fs.readdirSync(outputDir));
+  }
+
+  private sortChunkNames(names: string[]): string[] {
+    return [...names].sort((a, b) => {
+      const numA = parseInt(a.match(/\d+/)?.[0] || '0');
+      const numB = parseInt(b.match(/\d+/)?.[0] || '0');
+      return numA - numB;
+    });
   }
 
   async splitAudio(inputFilePath: string, outputDir: string) {

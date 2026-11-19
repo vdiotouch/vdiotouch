@@ -8,6 +8,7 @@ import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
 import { checkLastAttempt } from '@/src/common/utils';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { UploadService } from '@/src/worker/upload.service';
+import { AudioStorageService } from '@/src/worker/audio-storage.service';
 
 @Processor(process.env.BULL_AUDIO_TRANSCRIPT_MERGE_QUEUE, {
   concurrency: 5,
@@ -16,6 +17,7 @@ export class TranscriptMergerWorker extends WorkerHost implements OnModuleInit {
   constructor(
     private fileStatusPublisher: FileStatusPublisher,
     private uploaderService: UploadService,
+    private audioStorageService: AudioStorageService,
   ) {
     super();
   }
@@ -35,16 +37,37 @@ export class TranscriptMergerWorker extends WorkerHost implements OnModuleInit {
         Constants.FILE_STATUS.PROCESSING,
       );
 
-      await this.generateTranscript(msg.asset_id, msg.partial_transcript_files);
+      if (this.audioStorageService.isEnabled()) {
+        // Stateless: the partials were written by transcription jobs, possibly on other machines.
+        await this.audioStorageService.downloadPartialTranscripts(
+          msg.asset_id,
+          msg.partial_transcript_files.map((file) => file.name),
+          Utils.getLocalPartialTranscriptsDir(msg.asset_id, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY),
+        );
+      }
+
+      let transcriptPath = await this.generateTranscript(msg.asset_id, msg.partial_transcript_files);
       console.log('transcript merged successfully');
-      await this.uploaderService.publishVideoUploadJob(
-        msg.file_id.toString(),
-        msg.name,
-        msg.asset_id,
-        0,
-        0,
-        Constants.FILE_TYPE.TRANSCRIPT,
-      );
+
+      if (this.audioStorageService.isEnabled()) {
+        // Stateless: upload the transcript ourselves instead of handing it to upload-video-worker.
+        let size = await this.audioStorageService.uploadTranscript(msg.asset_id, msg.name, transcriptPath);
+        this.fileStatusPublisher.publishUpdateFileStatusEvent(
+          msg.file_id.toString(),
+          'Transcript file uploaded',
+          size,
+          Constants.FILE_STATUS.READY,
+        );
+      } else {
+        await this.uploaderService.publishVideoUploadJob(
+          msg.file_id.toString(),
+          msg.name,
+          msg.asset_id,
+          0,
+          0,
+          Constants.FILE_TYPE.TRANSCRIPT,
+        );
+      }
     } catch (e: any) {
       console.log(`error while extracting ${msg.asset_id} audio`, e, isLastAttempt);
 
