@@ -1,0 +1,8 @@
+# Cache rules for Cloudflare Workers Static Assets (deploy/cloudflare/frontend). Same as docker/nginx.conf.
+# nginx ignores this file. Rules merge, so "! Cache-Control" drops the first value before the long one is set.
+/*
+  Cache-Control: no-cache
+
+/assets/*
+  ! Cache-Control
+  Cache-Control: public, max-age=31536000, immutable

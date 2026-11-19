@@ -6,6 +6,7 @@ Runs the api and all six workers on Cloudflare Containers. Worker pools scale fr
 
 - `spike/` (CF-0): a single throwaway container that checks outbound TCP to Redis, RabbitMQ and MongoDB. Run it first.
 - `processor-scaler/` (CF-1 to CF-4): one Worker that is the api's public URL, starts worker containers when the api reports a backlog, and runs the api's cron jobs.
+- `frontend/` (F-1): the dashboard on Workers Static Assets, plus a tiny Worker for `/runtime-env.js`. See "Frontend" below.
 - `server/` stays cloud-neutral. The scaler only uses `GET /api/v1/processors/backlog` and the optional scale webhook.
 - **Not end to end yet:** workers still hand files over through a shared disk (`TEMP_VIDEO_DIRECTORY`). They need main plan PRs 1–5 (stateless on R2) before a video can reach `READY` here.
 
@@ -109,3 +110,43 @@ npm run scaler:containers                   # running containers
 - [ ] After deploy: `GET https://<scaler host>/api/v1/processors/backlog` with `x-internal-api-key` returns all pools.
 - [ ] Upload 1 video → `scaler:containers` shows the pools start → they go back to 0 after ~1–2 min idle.
 - [ ] Point the frontend at the scaler URL; check login, upload, playback.
+
+## Frontend
+
+The dashboard (`frontend/`, a Vite single-page app) on Cloudflare. Plan and diagrams: [docs/implementation/frontend-deploy-plan.md](../../docs/implementation/frontend-deploy-plan.md).
+
+```
+browser --> app.<domain> (Worker "vdio-touch-web")
+              |-- /runtime-env.js --> Worker code: settings from vars (no-store)
+              '-- everything else --> Static Assets: frontend/dist/ (unknown path -> index.html)
+```
+
+| File | What it is |
+|---|---|
+| `frontend/wrangler.jsonc` | Static Assets (`../../../frontend/dist`, SPA fallback, Worker only for `/runtime-env.js`), the six runtime vars, optional custom domain |
+| `frontend/src/index.ts` | Builds `window.__RUNTIME_CONFIG__` from a fixed list of vars; nothing else reaches the browser |
+| `../../frontend/public/_headers` | Cache rules for Static Assets: `/assets/*` 1 year, everything else `no-cache` (nginx ignores it) |
+
+| Var | Example |
+|---|---|
+| `NEXT_PUBLIC_VIDEO_TOUCH_API_URL` | `https://api.<domain>` (the processor-scaler URL) |
+| `NEXT_PUBLIC_VIDEO_LIST_PAGE_SIZE` | `10` |
+| `NEXT_PUBLIC_UPDATE_DATA_INTERVAL_IN_SECONDS` | `5` |
+| `AUTH_COOKIE_REFRESH` | `false` |
+| `SUPPORT_EMAIL` | `support@<domain>` |
+| `MAX_VIDEO_SIZE_MB` | `113` (match the api's `MAX_VIDEO_SIZE_IN_BYTES`) |
+
+These six keys are also listed in `frontend/src/shared/lib/config.ts` and `frontend/docker/entrypoint.sh`; add a new key to all three.
+
+```bash
+cd deploy/cloudflare
+npm install
+# edit frontend/wrangler.jsonc: vars (API URL…) and, once the zone is on Cloudflare, "routes"
+npm run web:deploy        # builds frontend/ then uploads dist/ + the Worker
+curl https://<site>/runtime-env.js   # shows your values
+npm run web:rollback      # previous version, if needed
+```
+
+- [ ] `/runtime-env.js` shows the right API URL.
+- [ ] Reload on a deep link (e.g. `/videos/<id>`) shows the page, not a 404.
+- [ ] Log in, list videos, open one, play it.
