@@ -1,10 +1,10 @@
 // CF-0 spike: can a Cloudflare container open outbound TCP / TLS to our Redis, RabbitMQ and MongoDB?
 // No npm dependencies on purpose: it tests the network path, not the client libraries.
 // GET /check runs every check and returns one JSON report.
-import http from 'node:http';
-import net from 'node:net';
-import tls from 'node:tls';
-import dns from 'node:dns/promises';
+const http = require('node:http');
+const net = require('node:net');
+const tls = require('node:tls');
+const dns = require('node:dns/promises');
 
 const PORT = 8080;
 const TIMEOUT_MS = 10_000;

@@ -13,7 +13,7 @@ Runs the api and all six workers on Cloudflare Containers. Worker pools scale fr
 
 | Path | What it is |
 |---|---|
-| `spike/container/connectivity-check.mjs` | Container: `GET /check` → TCP / TLS check to Redis (PING), RabbitMQ, MongoDB |
+| `spike/container/connectivity-check.js` | Container: `GET /check` → TCP / TLS check to Redis (PING), RabbitMQ, MongoDB |
 | `spike/src/index.ts` | Worker: `GET /` starts the container and returns its report |
 | `processor-scaler/src/index.ts` | Worker entry: webhook route, api proxy, cron |
 | `processor-scaler/src/env.ts` | Bindings, vars and secrets |
