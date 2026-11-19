@@ -18,7 +18,6 @@ const BANDWIDTH_BY_HEIGHT: Record<number, number> = {
  * Writes an asset's master playlist (videos/<id>/main.m3u8) from its READY playlist files.
  * Replaces the workers appending to a shared main.m3u8 on disk: each transcoder now runs alone,
  * so the api, which knows every rendition's status, owns the master.
- * Only used when object storage is enabled; with bunny the old worker-written master stays.
  */
 @Injectable()
 export class MasterManifestService {
@@ -26,10 +25,6 @@ export class MasterManifestService {
   private pendingWrites = new Map<string, Promise<void>>();
 
   constructor(private fileRepository: FileRepository, private objectStorageService: ObjectStorageService) {}
-
-  isEnabled(): boolean {
-    return this.objectStorageService.isEnabled();
-  }
 
   /** Rewrites the master playlist. Each call re-reads the files, so the last write always lists every READY rendition. */
   rebuild(assetId: string): Promise<void> {

@@ -118,19 +118,6 @@ export class AssetService {
     return result;
   }
 
-  async checkForDeleteLocalAssetFile(assetId: string) {
-    console.log('checking for ', assetId);
-    let files = await this.fileRepository.find({
-      asset_id: mongoose.Types.ObjectId(assetId),
-    });
-    let filesWithReadyStatus = files.filter((file) => file.latest_status === Constants.FILE_STATUS.READY);
-
-    console.log('length ', files.length, filesWithReadyStatus.length);
-    if (files.length === filesWithReadyStatus.length) {
-      this.cleanUpService.deleteLocalAssetFile(assetId);
-    }
-  }
-
   async checkForAssetFailedStatus(assetId: string) {
     try {
       let files = await this.fileRepository.find({
@@ -158,7 +145,9 @@ export class AssetService {
     });
 
     if (updatedAsset.latest_status === Constants.VIDEO_STATUS.FAILED) {
-      this.cleanUpService.deleteLocalAssetFile(updatedAsset._id.toString());
+      this.cleanUpService.deleteWorkingFiles(updatedAsset._id.toString()).catch((err) => {
+        console.log('error while deleting working files of failed asset ', updatedAsset._id.toString(), err);
+      });
     }
     if (
       updatedAsset.latest_status === Constants.VIDEO_STATUS.DOWNLOADED ||

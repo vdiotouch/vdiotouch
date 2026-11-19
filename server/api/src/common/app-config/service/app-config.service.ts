@@ -45,14 +45,12 @@ export class AppConfigService {
       S3_ENDPOINT: this.configService.get('S3_ENDPOINT'),
       S3_FORCE_PATH_STYLE: this.configService.get('S3_FORCE_PATH_STYLE', 'false') === 'true',
       VIDEO_BASE_URL: this.configService.getOrThrow('VIDEO_BASE_URL'),
-      TEMP_UPLOAD_DIRECTORY: this.configService.getOrThrow('TEMP_UPLOAD_DIRECTORY'),
       RABBIT_MQ_UPDATE_ASSET_ROUTING_KEY: this.configService.getOrThrow('RABBIT_MQ_UPDATE_ASSET_ROUTING_KEY'),
       RABBIT_MQ_UPDATE_ASSET_QUEUE: this.configService.getOrThrow('RABBIT_MQ_UPDATE_ASSET_QUEUE'),
       RABBIT_MQ_UPDATE_FILE_STATUS_ROUTING_KEY: this.configService.getOrThrow(
         'RABBIT_MQ_UPDATE_FILE_STATUS_ROUTING_KEY'
       ),
       RABBIT_MQ_UPDATE_FILE_STATUS_QUEUE: this.configService.getOrThrow('RABBIT_MQ_UPDATE_FILE_STATUS_QUEUE'),
-      TEMP_VIDEO_DIRECTORY: this.configService.getOrThrow('TEMP_VIDEO_DIRECTORY'),
       CDN_PROVIDER: this.configService.getOrThrow('CDN_PROVIDER'),
       DEFAULT_THUMBNAIL_URL: this.configService.getOrThrow('DEFAULT_THUMBNAIL_URL'),
       JWT_EXPIRATION_TIME_IN_SEC: +this.configService.getOrThrow('JWT_EXPIRATION_TIME_IN_SEC'),
@@ -76,10 +74,6 @@ export class AppConfigService {
       REDIS_USERNAME: this.configService.get('REDIS_USERNAME'),
       REDIS_PASSWORD: this.configService.get('REDIS_PASSWORD'),
       REDIS_TLS: this.configService.get('REDIS_TLS', 'false') === 'true',
-      MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES: +this.configService.get(
-        'MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES',
-        2147483648
-      ),
       RETRY_JOB_ATTEMPT_COUNT: +this.configService.get('RETRY_JOB_ATTEMPT_COUNT', 3),
       RETRY_JOB_BACKOFF_IN_MINUTE: +this.configService.get('RETRY_JOB_BACKOFF_IN_MINUTE', 10),
       GOTIPATH_CDN_SECRET: this.configService.getOrThrow('GOTIPATH_CDN_SECRET'),
@@ -95,7 +89,6 @@ export class AppConfigService {
       STORAGE_PROVIDER: this.configService.getOrThrow('STORAGE_PROVIDER'),
       BUNNY_STORAGE_ZONE_NAME: this.configService.get('BUNNY_STORAGE_ZONE_NAME'),
       BUNNY_STORAGE_URL: this.configService.get('BUNNY_STORAGE_URL'),
-      BUNNY_ACCESS_KEY: this.configService.get('BUNNY_ACCESS_KEY'),
       R2_ACCOUNT_ID: this.configService.get('R2_ACCOUNT_ID'),
       R2_ACCESS_KEY_ID: this.configService.get('R2_ACCESS_KEY_ID'),
       R2_SECRET_ACCESS_KEY: this.configService.get('R2_SECRET_ACCESS_KEY'),
@@ -248,14 +241,9 @@ export class AppConfigService {
         process.exit(1);
       }
     } else if (AppConfigService.appConfig.STORAGE_PROVIDER === Constants.STORAGE_PROVIDER.BUNNY) {
-      if (
-        !AppConfigService.appConfig.BUNNY_ACCESS_KEY ||
-        !AppConfigService.appConfig.BUNNY_STORAGE_ZONE_NAME ||
-        !AppConfigService.appConfig.BUNNY_STORAGE_URL
-      ) {
-        console.error('Bunny storage provider is selected, but some Bunny configurations are missing.');
-        process.exit(1);
-      }
+      // Every service shares files through an S3 API bucket now; Bunny storage has none. Bunny as a CDN still works.
+      console.error('STORAGE_PROVIDER=bunny is no longer supported. Use s3 or r2 (CDN_PROVIDER=bunny is still fine).');
+      process.exit(1);
     } else if (AppConfigService.appConfig.STORAGE_PROVIDER === Constants.STORAGE_PROVIDER.R2) {
       if (
         !AppConfigService.appConfig.R2_ACCESS_KEY_ID ||

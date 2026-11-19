@@ -16,7 +16,6 @@ export class AppConfigService {
       RABBIT_MQ_URL: this.configService.getOrThrow('RABBIT_MQ_URL'),
       TEMP_VIDEO_DIRECTORY: this.configService.getOrThrow('TEMP_VIDEO_DIRECTORY'),
       BULL_PROCESS_VIDEO_JOB_QUEUE: this.configService.getOrThrow('BULL_PROCESS_VIDEO_JOB_QUEUE'),
-      BULL_UPLOAD_JOB_QUEUE: this.configService.getOrThrow('BULL_UPLOAD_JOB_QUEUE'),
       REDIS_HOST: this.configService.getOrThrow('REDIS_HOST'),
       REDIS_PORT: +this.configService.getOrThrow('REDIS_PORT'),
       REDIS_USERNAME: this.configService.get('REDIS_USERNAME'),

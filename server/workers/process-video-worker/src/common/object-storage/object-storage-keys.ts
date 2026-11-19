@@ -13,3 +13,6 @@ export const getAudioChunkObjectKey = (assetId: string, chunkName: string): stri
 /** One chunk's transcript (transcript_<n>.json), written by transcription, read by the transcript merge. */
 export const getPartialTranscriptObjectKey = (assetId: string, transcriptName: string): string =>
   `audio/${assetId}/transcripts/${transcriptName}`;
+
+/** Every working-file prefix of an asset (never its playback files under videos/), deleted once the asset is done. */
+export const getAssetWorkingPrefixes = (assetId: string): string[] => [`sources/${assetId}/`, `audio/${assetId}/`];

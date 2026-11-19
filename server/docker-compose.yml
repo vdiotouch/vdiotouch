@@ -27,8 +27,6 @@ services:
       - PORT=$API_PORT
     ports:
       - $API_PORT:$API_PORT
-    volumes:
-      - ./temp_videos:$TEMP_VIDEO_DIRECTORY
       - ./uploads:$TEMP_UPLOAD_DIRECTORY
     restart: always
 
@@ -43,8 +41,6 @@ services:
       - redis
     environment:
       - DOWNLOAD_VIDEO_WORKER_PORT=$DOWNLOAD_VIDEO_WORKER_PORT
-    volumes:
-      - ./temp_videos:$TEMP_VIDEO_DIRECTORY
     restart: always
   validate-video-worker:
     build:
@@ -57,8 +53,6 @@ services:
       - redis
     environment:
       - VALIDATE_VIDEO_WORKER_PORT=$VALIDATE_VIDEO_WORKER_PORT
-    volumes:
-      - ./temp_videos:$TEMP_VIDEO_DIRECTORY
     restart: always
 
   thumbnail-generation-worker:
@@ -72,8 +66,6 @@ services:
       - redis
     environment:
       - THUMBNAIL_WORKER_PORT=$THUMBNAIL_WORKER_PORT
-    volumes:
-      - ./temp_videos:$TEMP_VIDEO_DIRECTORY
     restart: always
 
   # One container per height in TRANSCODE_HEIGHTS (default 720,540,480).
@@ -89,8 +81,7 @@ services:
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_540P_PROCESS_VIDEO_JOB_QUEUE
-    volumes:
-      - ./temp_videos:$TEMP_VIDEO_DIRECTORY
+      - WORKER_ROLE=transcode
     cpuset: "0-3"
     restart: always
 
@@ -107,8 +98,7 @@ services:
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_480P_PROCESS_VIDEO_JOB_QUEUE
-    volumes:
-      - ./temp_videos:$TEMP_VIDEO_DIRECTORY
+      - WORKER_ROLE=transcode
     cpuset: "4-7"
     restart: always
 
@@ -124,12 +114,11 @@ services:
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_720P_PROCESS_VIDEO_JOB_QUEUE
-    volumes:
-      - ./temp_videos:$TEMP_VIDEO_DIRECTORY
+      - WORKER_ROLE=transcode
     cpuset: "8-11"
     restart: always
 
-  # Only gets transcode jobs when TRANSCODE_HEIGHTS includes 1080; still serves the mp4 queue (WORKER_ROLE=all).
+  # Only gets jobs when TRANSCODE_HEIGHTS includes 1080.
   process-video-worker-1080p:
     build:
       context: workers/process-video-worker
@@ -142,8 +131,25 @@ services:
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
       - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_1080P_PROCESS_VIDEO_JOB_QUEUE
-    volumes:
-      - ./temp_videos:$TEMP_VIDEO_DIRECTORY
+      - WORKER_ROLE=transcode
+    cpuset: "12-15"
+    restart: always
+
+  # Builds the downloadable MP4s (download-file-generation queue).
+  process-video-worker-mp4:
+    build:
+      context: workers/process-video-worker
+      dockerfile: Dockerfile
+    container_name: process-video-worker-mp4
+    env_file: .env
+    depends_on:
+      - video-touch-api
+      - redis
+    environment:
+      - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
+      # Required by the worker's config; the mp4 role doesn't consume it.
+      - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_720P_PROCESS_VIDEO_JOB_QUEUE
+      - WORKER_ROLE=mp4
     cpuset: "12-15"
     restart: always
 
@@ -157,8 +163,6 @@ services:
       - video-touch-api
     environment:
       - AUDIO_WORKER_PORT=$AUDIO_WORKER_PORT
-    volumes:
-      - ./temp_videos:$TEMP_VIDEO_DIRECTORY
     cpuset: "12-15"
     restart: always
 
@@ -174,6 +178,4 @@ services:
       - redis
     environment:
       - UPLOAD_VIDEO_WORKER_PORT=$UPLOAD_VIDEO_WORKER_PORT
-    volumes:
-      - ./temp_videos:$TEMP_VIDEO_DIRECTORY
     restart: always

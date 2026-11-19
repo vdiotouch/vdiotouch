@@ -6,9 +6,9 @@ import { terminal } from 'video-touch-common';
 export class AudioExtractionService {
   constructor() {}
 
-  /** inputFilePath is a local path or a signed URL (see AudioStorageService.getSourceVideoInput). */
+  /** inputFilePath is a signed URL to the source (see AudioStorageService.getSourceVideoInput). */
   async extractAudio(inputFilePath: string, outputFolderPath: string) {
-    // Created here: alone in a container, the asset folder doesn't exist yet.
+    // Created here: this container's scratch folder for the asset may not exist yet.
     fs.mkdirSync(outputFolderPath, { recursive: true });
     // Output file path (e\.g\. audio.m4a)
     const outputAudioPath = `${outputFolderPath}/audio.m4a`;

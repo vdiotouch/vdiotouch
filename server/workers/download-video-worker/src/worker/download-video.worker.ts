@@ -9,6 +9,8 @@ import { AppConfigService } from '@/src/common/app-config/service/app-config.ser
 import { RabbitMqService } from '@/src/common/rabbit-mq/service/rabbitmq.service';
 import { ObjectStorageService } from '@/src/common/object-storage/object-storage.service';
 import { getSourceObjectKey } from '@/src/common/object-storage/object-storage-keys';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Processor(process.env.BULL_DOWNLOAD_JOB_QUEUE)
 export class DownloadVideoJobHandler extends WorkerHost implements OnModuleInit {
@@ -29,13 +31,14 @@ export class DownloadVideoJobHandler extends WorkerHost implements OnModuleInit 
     let msg: Models.VideoDownloadJobModel = job.data as Models.VideoDownloadJobModel;
     let isLastAttempt = this.isLastAttempt(job);
 
+    // This container's own scratch copy: every later step reads the source from the bucket.
+    let destinationPath = Utils.getLocalVideoMp4Path(
+      msg.asset_id.toString(),
+      AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
+    );
     try {
-      let destinationPath = Utils.getLocalVideoMp4Path(
-        msg.asset_id.toString(),
-        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
-      );
       await this.download(msg, destinationPath);
-      await this.uploadSourceToBucket(msg.asset_id.toString(), destinationPath);
+      await this.objectStorageService.uploadFile(getSourceObjectKey(msg.asset_id.toString()), destinationPath);
 
       this.publishUpdateAssetEvent(msg.asset_id, Constants.VIDEO_STATUS.DOWNLOADED, 'Video downloaded');
       return Promise.resolve(null);
@@ -46,19 +49,22 @@ export class DownloadVideoJobHandler extends WorkerHost implements OnModuleInit 
         return;
       }
       throw e;
+    } finally {
+      this.removeLocalFile(destinationPath);
     }
   }
 
-  /**
-   * Copies the downloaded source to the bucket, where validate / thumbnail read it (stateless).
-   * The local file stays for now: transcode and audio still read the shared disk until they move to the bucket.
-   * Skipped when STORAGE_PROVIDER has no S3 API (bunny); then every step keeps using the shared disk.
-   */
-  async uploadSourceToBucket(assetId: string, localPath: string) {
-    if (!this.objectStorageService.isEnabled()) {
-      return;
+  /** Deletes the scratch file and its asset folder once empty. Never throws: cleanup must not fail the job. */
+  removeLocalFile(localPath: string) {
+    try {
+      fs.rmSync(localPath, { force: true });
+      let dir = path.dirname(localPath);
+      if (fs.existsSync(dir) && fs.readdirSync(dir).length === 0) {
+        fs.rmdirSync(dir);
+      }
+    } catch (e) {
+      console.log('error while removing local file', localPath, e);
     }
-    await this.objectStorageService.uploadFile(getSourceObjectKey(assetId), localPath);
   }
 
   isLastAttempt(job: Job): boolean {

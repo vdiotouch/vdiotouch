@@ -1,13 +1,9 @@
-import { Logger } from '@nestjs/common';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { Constants, Models, terminal, Utils } from 'video-touch-common';
-import { S3ClientService } from '@/src/common/aws/s3/s3-client.service';
 import { RabbitMqService } from '@/src/common/rabbit-mq/service/rabbitmq.service';
 import { Job } from 'bullmq';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import console from 'node:console';
-import { BunnyHttpService } from '@/src/common/bunny/service/bunny-http.service';
-import { R2ClientService } from '@/src/common/r2/service/r2-client.service';
 import { ObjectStorageService } from '@/src/common/object-storage/object-storage.service';
 import { getSourceObjectKey } from '@/src/common/object-storage/object-storage-keys';
 import fs from 'fs';
@@ -16,10 +12,7 @@ import path from 'path';
 @Processor(process.env.BULL_THUMBNAIL_GENERATION_JOB_QUEUE)
 export class ThumbnailGenerationWorker extends WorkerHost {
   constructor(
-    private s3ClientService: S3ClientService,
     private rabbitMqService: RabbitMqService,
-    private bunnyClientService: BunnyHttpService,
-    private r2ClientService: R2ClientService,
     private objectStorageService: ObjectStorageService,
   ) {
     super();
@@ -35,52 +28,26 @@ export class ThumbnailGenerationWorker extends WorkerHost {
 
   public async handle(msg: Models.ThumbnailGenerationJobModel, isLastAttempt: boolean) {
     console.log('ThumbnailGenerationJobHandler', msg);
+    // This container's own scratch folder; the thumbnail only lives there until it is uploaded.
+    let thumbnailOutputPath = Utils.getLocalThumbnailPath(
+      msg.asset_id.toString(),
+      AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
+    );
     try {
       this.publishUpdateFileStatusEvent(msg.file_id, 0, Constants.FILE_STATUS.PROCESSING, 'Processing started');
-      let videoInput = await this.getSourceVideoInput(msg.asset_id.toString());
-      let thumbnailOutputPath = Utils.getLocalThumbnailPath(
-        msg.asset_id.toString(),
-        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
-      );
-      // The asset folder only exists here if this container also downloaded the source (shared disk).
+      // ffmpeg reads the bucket copy of the source through a signed URL.
+      let videoInput = await this.objectStorageService.getSignedReadUrl(getSourceObjectKey(msg.asset_id.toString()));
       fs.mkdirSync(path.dirname(thumbnailOutputPath), { recursive: true });
 
       await this.generateThumbnail(videoInput, thumbnailOutputPath);
       let metadata = await this.getMetadata(thumbnailOutputPath);
-      Logger.debug(metadata, 'Thumbnail metadata');
+      console.log('Thumbnail metadata', metadata);
 
-      if (AppConfigService.appConfig.STORAGE_PROVIDER === Constants.STORAGE_PROVIDER.S3) {
-        let uploadRes = await this.s3ClientService.uploadObject(
-          {
-            bucket: AppConfigService.appConfig.AWS_S3_BUCKET_NAME,
-            key: Utils.getServerThumbnailPath(msg.asset_id.toString()),
-            filePath: thumbnailOutputPath,
-            contentType: 'image/png',
-          },
-          true,
-        );
-        Logger.debug(uploadRes, 'Thumbnail upload response');
-      } else if (AppConfigService.appConfig.STORAGE_PROVIDER === Constants.STORAGE_PROVIDER.BUNNY) {
-        let uploadRes = await this.bunnyClientService.uploadFile({
-          filePath: thumbnailOutputPath,
-          remotePath: Utils.getServerThumbnailPath(msg.asset_id.toString()),
-          contentType: 'image/png',
-        });
-        Logger.debug(uploadRes, 'Thumbnail upload response');
-      } else if (AppConfigService.appConfig.STORAGE_PROVIDER === Constants.STORAGE_PROVIDER.R2) {
-        let uploadRes = await this.r2ClientService.uploadObject(
-          {
-            bucket: AppConfigService.appConfig.R2_BUCKET_NAME,
-            key: Utils.getServerThumbnailPath(msg.asset_id.toString()),
-            filePath: thumbnailOutputPath,
-            contentType: 'image/png',
-          },
-          true,
-        );
-        Logger.debug(uploadRes, 'Thumbnail upload response');
-      } else {
-        throw new Error('Unsupported storage provider: ' + AppConfigService.appConfig.STORAGE_PROVIDER);
-      }
+      await this.objectStorageService.uploadFile(
+        Utils.getServerThumbnailPath(msg.asset_id.toString()),
+        thumbnailOutputPath,
+        'image/png',
+      );
 
       this.publishUpdateFileStatusEvent(msg.file_id, metadata.size, Constants.FILE_STATUS.READY, 'Thumbnail generated');
       console.log('event published');
@@ -91,19 +58,22 @@ export class ThumbnailGenerationWorker extends WorkerHost {
         return;
       }
       throw new Error('Error in thumbnail generation job handler: ' + e.message);
+    } finally {
+      this.removeLocalFile(thumbnailOutputPath);
     }
   }
 
-  /**
-   * Where ffmpeg reads the source: a signed URL to the bucket copy (stateless), or the shared temp disk when
-   * object storage is off (bunny) or the asset was downloaded before the bucket copy existed.
-   */
-  async getSourceVideoInput(assetId: string): Promise<string> {
-    let sourceKey = getSourceObjectKey(assetId);
-    if (this.objectStorageService.isEnabled() && (await this.objectStorageService.exists(sourceKey))) {
-      return this.objectStorageService.getSignedReadUrl(sourceKey);
+  /** Deletes the scratch file and its asset folder once empty. Never throws: cleanup must not fail the job. */
+  removeLocalFile(localPath: string) {
+    try {
+      fs.rmSync(localPath, { force: true });
+      let dir = path.dirname(localPath);
+      if (fs.existsSync(dir) && fs.readdirSync(dir).length === 0) {
+        fs.rmdirSync(dir);
+      }
+    } catch (e) {
+      console.log('error while removing local file', localPath, e);
     }
-    return Utils.getLocalVideoMp4Path(assetId, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
   }
 
   isLastAttempt(job: Job): boolean {

@@ -24,7 +24,7 @@ const DELETE_BATCH_SIZE = 1000;
 /**
  * The bucket every service shares instead of a local disk: S3 API, so it works with R2, AWS S3 and other
  * S3-compatible stores (see object-storage-config.ts). Keys are bucket paths, e.g. "sources/<asset_id>/source.mp4".
- * Disabled (every call throws) when STORAGE_PROVIDER has no S3 API, i.e. bunny.
+ * Disabled (every call throws) when STORAGE_PROVIDER is not s3 or r2, so a misconfiguration fails the job.
  */
 @Injectable()
 export class ObjectStorageService implements OnModuleInit {

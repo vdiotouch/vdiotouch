@@ -7,7 +7,6 @@ import { Constants, Models, Utils } from 'video-touch-common';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
 import { checkLastAttempt } from '@/src/common/utils';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
-import { UploadService } from '@/src/worker/upload.service';
 import { AudioStorageService } from '@/src/worker/audio-storage.service';
 
 @Processor(process.env.BULL_AUDIO_TRANSCRIPT_MERGE_QUEUE, {
@@ -16,7 +15,6 @@ import { AudioStorageService } from '@/src/worker/audio-storage.service';
 export class TranscriptMergerWorker extends WorkerHost implements OnModuleInit {
   constructor(
     private fileStatusPublisher: FileStatusPublisher,
-    private uploaderService: UploadService,
     private audioStorageService: AudioStorageService,
   ) {
     super();
@@ -32,42 +30,37 @@ export class TranscriptMergerWorker extends WorkerHost implements OnModuleInit {
     try {
       this.fileStatusPublisher.publishUpdateFileStatusEvent(
         msg.file_id.toString(),
-          `Transcript merging started`,
+        `Transcript merging started`,
         0,
         Constants.FILE_STATUS.PROCESSING,
       );
 
-      if (this.audioStorageService.isEnabled()) {
-        // Stateless: the partials were written by transcription jobs, possibly on other machines.
+      // A folder per job, so it holds only this job's downloaded partials and merged transcript.
+      let assetDir = Utils.getLocalVideoRootPath(msg.asset_id, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY);
+      let jobDir = `${assetDir}/transcript_merge_${msg.file_id}`;
+      let size: number;
+      try {
+        // The partials were written by transcription jobs, possibly on other machines.
         await this.audioStorageService.downloadPartialTranscripts(
           msg.asset_id,
           msg.partial_transcript_files.map((file) => file.name),
-          Utils.getLocalPartialTranscriptsDir(msg.asset_id, AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY),
+          `${jobDir}/partials`,
         );
+
+        let transcriptPath = await this.generateTranscript(msg.partial_transcript_files, jobDir);
+        console.log('transcript merged successfully');
+
+        size = await this.audioStorageService.uploadTranscript(msg.asset_id, msg.name, transcriptPath);
+      } finally {
+        fs.rmSync(jobDir, { recursive: true, force: true });
       }
 
-      let transcriptPath = await this.generateTranscript(msg.asset_id, msg.partial_transcript_files);
-      console.log('transcript merged successfully');
-
-      if (this.audioStorageService.isEnabled()) {
-        // Stateless: upload the transcript ourselves instead of handing it to upload-video-worker.
-        let size = await this.audioStorageService.uploadTranscript(msg.asset_id, msg.name, transcriptPath);
-        this.fileStatusPublisher.publishUpdateFileStatusEvent(
-          msg.file_id.toString(),
-          'Transcript file uploaded',
-          size,
-          Constants.FILE_STATUS.READY,
-        );
-      } else {
-        await this.uploaderService.publishVideoUploadJob(
-          msg.file_id.toString(),
-          msg.name,
-          msg.asset_id,
-          0,
-          0,
-          Constants.FILE_TYPE.TRANSCRIPT,
-        );
-      }
+      this.fileStatusPublisher.publishUpdateFileStatusEvent(
+        msg.file_id.toString(),
+        'Transcript file uploaded',
+        size,
+        Constants.FILE_STATUS.READY,
+      );
     } catch (e: any) {
       console.log(`error while extracting ${msg.asset_id} audio`, e, isLastAttempt);
 
@@ -115,9 +108,10 @@ export class TranscriptMergerWorker extends WorkerHost implements OnModuleInit {
     return [hours, minutes, secs].map((val) => String(val).padStart(2, '0')).join(':');
   }
 
+  /** Merges the partials in localDir/partials into localDir/transcript.json and returns that path. */
   async generateTranscript(
-    assetId: string,
     partialTranscriptFiles: { name: string; audio_start_time: string }[],
+    localDir: string,
   ): Promise<string> {
     if (partialTranscriptFiles.length === 0) {
       throw new Error('No partial transcript files found for this asset');
@@ -131,19 +125,13 @@ export class TranscriptMergerWorker extends WorkerHost implements OnModuleInit {
       return numA - numB;
     });
 
-    let finalTranscriptFilePath = Utils.getLocalTranscriptPath(
-      assetId,
-      AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
-    );
+    let finalTranscriptFilePath = `${localDir}/${Utils.getTranscriptFileName()}`;
 
     // Merge all partial transcripts into a single JSON array
     let mergedTranscripts: any[] = [];
 
     for (let file of partialTranscriptFiles) {
-      let partialTranscriptPath = `${Utils.getLocalPartialTranscriptsDir(
-        assetId,
-        AppConfigService.appConfig.TEMP_VIDEO_DIRECTORY,
-      )}/${file.name}`;
+      let partialTranscriptPath = `${localDir}/partials/${file.name}`;
 
       if (!fs.existsSync(partialTranscriptPath)) {
         console.warn(`Partial transcript file not found: ${partialTranscriptPath}`);
@@ -183,6 +171,7 @@ export class TranscriptMergerWorker extends WorkerHost implements OnModuleInit {
     }
 
     // Write the merged transcript to the final file
+    fs.mkdirSync(localDir, { recursive: true });
     fs.writeFileSync(finalTranscriptFilePath, JSON.stringify(mergedTranscripts, null, 2), 'utf-8');
 
     console.log(`Final transcript generated at: ${finalTranscriptFilePath}`);
