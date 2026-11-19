@@ -76,18 +76,19 @@ services:
       - ./temp_videos:$TEMP_VIDEO_DIRECTORY
     restart: always
 
-  process-video-worker-360p:
+  # One container per height in TRANSCODE_HEIGHTS (default 720,540,480).
+  process-video-worker-540p:
     build:
       context: workers/process-video-worker
       dockerfile: Dockerfile
-    container_name: process-video-worker-360p
+    container_name: process-video-worker-540p
     env_file: .env
     depends_on:
       - video-touch-api
       - redis
     environment:
       - PROCESS_VIDEO_WORKER_PORT=$PROCESS_VIDEO_WORKER_PORT
-      - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_360P_PROCESS_VIDEO_JOB_QUEUE
+      - BULL_PROCESS_VIDEO_JOB_QUEUE=$BULL_540P_PROCESS_VIDEO_JOB_QUEUE
     volumes:
       - ./temp_videos:$TEMP_VIDEO_DIRECTORY
     cpuset: "0-3"
@@ -128,6 +129,7 @@ services:
     cpuset: "8-11"
     restart: always
 
+  # Only gets transcode jobs when TRANSCODE_HEIGHTS includes 1080; still serves the mp4 queue (WORKER_ROLE=all).
   process-video-worker-1080p:
     build:
       context: workers/process-video-worker

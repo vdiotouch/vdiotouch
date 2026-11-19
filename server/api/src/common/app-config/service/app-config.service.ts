@@ -65,6 +65,10 @@ export class AppConfigService {
       BULL_540P_PROCESS_VIDEO_JOB_QUEUE: this.configService.getOrThrow('BULL_540P_PROCESS_VIDEO_JOB_QUEUE'),
       BULL_720P_PROCESS_VIDEO_JOB_QUEUE: this.configService.getOrThrow('BULL_720P_PROCESS_VIDEO_JOB_QUEUE'),
       BULL_1080P_PROCESS_VIDEO_JOB_QUEUE: this.configService.getOrThrow('BULL_1080P_PROCESS_VIDEO_JOB_QUEUE'),
+      TRANSCODE_HEIGHTS: this.configService
+        .get('TRANSCODE_HEIGHTS', '720,540,480')
+        .split(',')
+        .map((height: string) => +height.trim()),
       BULL_THUMBNAIL_GENERATION_JOB_QUEUE: this.configService.getOrThrow('BULL_THUMBNAIL_GENERATION_JOB_QUEUE'),
       BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE: this.configService.getOrThrow('BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE'),
       REDIS_HOST: this.configService.getOrThrow('REDIS_HOST'),

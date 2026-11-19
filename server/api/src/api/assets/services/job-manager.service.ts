@@ -71,25 +71,15 @@ export class JobManagerService {
     return null;
   }
 
+  /** The rendition ladder, highest first, from TRANSCODE_HEIGHTS (e.g. "720,540,480"). */
   getHeightWidthMap(): HeightWidthMap[] {
-    return [
-      {
-        height: 1080,
-        width: 1920,
-      },
-      {
-        height: 720,
-        width: 1280,
-      },
-      {
-        height: 480,
-        width: 854,
-      },
-      {
-        height: 360,
-        width: 640,
-      },
-    ];
+    return AppConfigService.appConfig.TRANSCODE_HEIGHTS.map((height) => {
+      const resolution = (Constants.VIDEO_RESOLUTION as Record<string, HeightWidthMap>)[`${height}p`];
+      if (!resolution) {
+        throw new Error(`TRANSCODE_HEIGHTS has an unsupported height: ${height}`);
+      }
+      return { height: resolution.height, width: resolution.width };
+    }).sort((a, b) => b.height - a.height);
   }
 
   getHeightWiseQueueName(height: number) {
@@ -134,8 +124,11 @@ export class JobManagerService {
     };
   }
 
+  /** Rungs no taller than the source. A source smaller than every rung still gets the lowest one. */
   getAllHeightWidthMapByHeight(height: number) {
-    return this.getHeightWidthMap().filter((data) => data.height <= height);
+    const ladder = this.getHeightWidthMap();
+    const rungs = ladder.filter((data) => data.height <= height);
+    return rungs.length ? rungs : ladder.slice(-1);
   }
 
   getJobDataByHeight(height: number) {

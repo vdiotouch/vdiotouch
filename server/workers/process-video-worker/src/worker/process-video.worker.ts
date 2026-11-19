@@ -6,6 +6,7 @@ import { Job } from 'bullmq';
 import { checkIsLastAttempt } from '@/src/common/utils';
 import { UploadService } from '@/src/worker/upload.service';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
+import { RenditionUploadService } from '@/src/worker/rendition-upload.service';
 
 @Processor(process.env.BULL_PROCESS_VIDEO_JOB_QUEUE, { lockDuration: 1000 * 60 * 60 * 1 }) // 2 hours lock duration
 export class ProcessVideoWorker extends WorkerHost {
@@ -14,6 +15,7 @@ export class ProcessVideoWorker extends WorkerHost {
     private manifestService: ManifestService,
     private uploadService: UploadService,
     private fileStatusPublisher: FileStatusPublisher,
+    private renditionUploadService: RenditionUploadService,
   ) {
     super();
     console.log('ProcessVideoWorker initialized');
@@ -39,16 +41,28 @@ export class ProcessVideoWorker extends WorkerHost {
       if (msg.type === Constants.FILE_TYPE.PLAYLIST) {
         let res = await this.transcodingService.transcodeVideoByResolution(msg.asset_id.toString(), height, width);
         console.log(`video ${height}p transcode:`, res);
-        this.manifestService.appendManifest(msg.asset_id.toString(), height);
 
-        await this.uploadService.publishVideoUploadJob(
-          msg.file_id.toString(),
-          msg.name,
-          msg.asset_id,
-          height,
-          width,
-          msg.type,
-        );
+        if (this.renditionUploadService.isEnabled()) {
+          // Stateless: upload this rendition ourselves; the api writes the master playlist from the READY files.
+          let size = await this.renditionUploadService.uploadRendition(msg.asset_id.toString(), height);
+          this.fileStatusPublisher.publishUpdateFileStatusEvent(
+            msg.file_id.toString(),
+            'File uploaded',
+            size,
+            Constants.FILE_STATUS.READY,
+          );
+        } else {
+          // Shared disk (bunny): append to the shared master playlist and let upload-video-worker upload both.
+          this.manifestService.appendManifest(msg.asset_id.toString(), height);
+          await this.uploadService.publishVideoUploadJob(
+            msg.file_id.toString(),
+            msg.name,
+            msg.asset_id,
+            height,
+            width,
+            msg.type,
+          );
+        }
       }
       if (msg.type === Constants.FILE_TYPE.DOWNLOAD) {
         let res = await this.transcodingService.createMp4FromM3u8ByResolution(
