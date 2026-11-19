@@ -1,5 +1,5 @@
 # STEP 1: Base image for dependencies
-FROM node:20-slim as base
+FROM node:22-slim as base
 WORKDIR /app
 COPY package.json .yarnrc ./
 # Install production dependencies and prune
@@ -17,7 +17,7 @@ RUN yarn
 RUN yarn build
 
 # STEP 3: Final Production Image
-FROM --platform=linux/amd64 node:18-slim
+FROM --platform=linux/amd64 node:22-slim
 
 # Install system dependencies
 RUN apt-get update && \
