@@ -21,3 +21,7 @@ promt.txt
 promt_1.txtfrontend/.env
 frontend/.env
 CLAUDE.md
+
+# Cloudflare adapter: local build state and secret files for `wrangler secret bulk`
+**/.wrangler
+deploy/cloudflare/*secrets*.json

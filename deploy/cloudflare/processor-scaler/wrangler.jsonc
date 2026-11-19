@@ -1,0 +1,93 @@
+// processor-scaler: api front door + autoscaler for every worker pool. See ../README.md.
+//
+// Container entry  -> Durable Object class -> binding
+//   api            -> ApiContainer          -> API_CONTAINER            (always on, API_REPLICAS)
+//   download       -> DownloadContainer     -> DOWNLOAD_CONTAINER       (pool: download)
+//   validate       -> ValidateContainer     -> VALIDATE_CONTAINER       (pool: validate)
+//   thumbnail      -> ThumbnailContainer    -> THUMBNAIL_CONTAINER      (pool: thumbnail)
+//   process-video  -> ProcessVideoContainer -> PROCESS_VIDEO_CONTAINER  (pools: transcode-*, mp4)
+//   upload         -> UploadContainer       -> UPLOAD_CONTAINER         (pool: upload)
+//   audio          -> AudioContainer        -> AUDIO_CONTAINER          (pool: audio)
+//
+// max_instances must be >= the sum of the *_MAX_PROCESSORS of the pools on that image
+// (process-video: 5 transcode heights x 10 + mp4 3 = 53).
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "vdio-touch-processor-scaler",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-11-01",
+  "observability": { "enabled": true },
+
+  "vars": {
+    "API_REPLICAS": "1",
+    "API_PORT": "3000",
+    "WORKER_IDLE_EXIT_SEC": "60",
+    "REDIS_TLS": "true"
+  },
+
+  "triggers": {
+    "crons": ["* * * * *", "*/5 * * * *", "0 * * * *"]
+  },
+
+  "containers": [
+    { "name": "api", "image": "../../../server/api/Dockerfile", "instance_type": "standard-1", "max_instances": 3 },
+    {
+      "name": "download",
+      "image": "../../../server/workers/download-video-worker/Dockerfile",
+      "instance_type": "standard-1",
+      "max_instances": 10
+    },
+    {
+      "name": "validate",
+      "image": "../../../server/workers/validate-video-worker/Dockerfile",
+      "instance_type": "basic",
+      "max_instances": 10
+    },
+    {
+      "name": "thumbnail",
+      "image": "../../../server/workers/thumbnail-generation-worker/Dockerfile",
+      "instance_type": "standard-1",
+      "max_instances": 10
+    },
+    {
+      "name": "process-video",
+      "image": "../../../server/workers/process-video-worker/Dockerfile",
+      "instance_type": "standard-4",
+      "max_instances": 53
+    },
+    {
+      "name": "upload",
+      "image": "../../../server/workers/upload-video-worker/Dockerfile",
+      "instance_type": "standard-1",
+      "max_instances": 3
+    },
+    {
+      "name": "audio",
+      "image": "../../../server/workers/audio-worker/Dockerfile",
+      "instance_type": "standard-2",
+      "max_instances": 5
+    }
+  ],
+
+  "exports": {
+    "ApiContainer": { "type": "durable-object", "storage": "sqlite", "container": "api" },
+    "DownloadContainer": { "type": "durable-object", "storage": "sqlite", "container": "download" },
+    "ValidateContainer": { "type": "durable-object", "storage": "sqlite", "container": "validate" },
+    "ThumbnailContainer": { "type": "durable-object", "storage": "sqlite", "container": "thumbnail" },
+    "ProcessVideoContainer": { "type": "durable-object", "storage": "sqlite", "container": "process-video" },
+    "UploadContainer": { "type": "durable-object", "storage": "sqlite", "container": "upload" },
+    "AudioContainer": { "type": "durable-object", "storage": "sqlite", "container": "audio" }
+  },
+
+  "durable_objects": {
+    "bindings": [
+      { "name": "API_CONTAINER", "class_name": "ApiContainer" },
+      { "name": "DOWNLOAD_CONTAINER", "class_name": "DownloadContainer" },
+      { "name": "VALIDATE_CONTAINER", "class_name": "ValidateContainer" },
+      { "name": "THUMBNAIL_CONTAINER", "class_name": "ThumbnailContainer" },
+      { "name": "PROCESS_VIDEO_CONTAINER", "class_name": "ProcessVideoContainer" },
+      { "name": "UPLOAD_CONTAINER", "class_name": "UploadContainer" },
+      { "name": "AUDIO_CONTAINER", "class_name": "AudioContainer" }
+    ]
+  }
+}

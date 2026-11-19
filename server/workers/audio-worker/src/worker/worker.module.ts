@@ -1,4 +1,7 @@
 import { Module } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
+import { buildRedisConnection } from '@/src/common/app-config/build-redis-connection';
+import { WorkerIdleExitService } from '@/src/common/idle-exit/worker-idle-exit.service';
 import { AppConfigModule } from '@/src/common/app-config/app-config.module';
 import { AudioExtractionService } from '@/src/worker/audio-extraction.service';
 import { BullModule } from '@nestjs/bullmq';
@@ -13,15 +16,13 @@ import { TranscriptMergerWorker } from '@/src/worker/transcript-merger.worker';
 
 @Module({
   imports: [
+    DiscoveryModule,
     AppConfigModule,
     RabbitMQModule,
     BullModule.forRootAsync({
       inject: [AppConfigService],
       useFactory: () => ({
-        connection: {
-          host: AppConfigService.appConfig.REDIS_HOST,
-          port: AppConfigService.appConfig.REDIS_PORT,
-        },
+        connection: buildRedisConnection(AppConfigService.appConfig),
       }),
     }),
     BullModule.registerQueueAsync(
@@ -49,6 +50,7 @@ import { TranscriptMergerWorker } from '@/src/worker/transcript-merger.worker';
   ],
   controllers: [],
   providers: [
+    WorkerIdleExitService,
     AudioExtractionService,
     AudioExtractionWorker,
     AudioTranscriptionWorker,

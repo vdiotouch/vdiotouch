@@ -15,7 +15,7 @@ Part of [stateless-pipeline-plan.md](./stateless-pipeline-plan.md) (issue [#20](
 
 | Component | What it is | What it does for us | Why this one |
 |---|---|---|---|
-| **Workers** | Small JS/TS functions running on Cloudflare's edge | `processor-scaler`: front door for the api, receives `/scale`, decides how many containers to start | The only way to receive HTTP and to control containers on Cloudflare |
+| **Workers** | Small JS/TS functions running on Cloudflare's edge | `processor-scaler`: front door for the api, receives `/__scaler/scale`, decides how many containers to start | The only way to receive HTTP and to control containers on Cloudflare |
 | **Cron Triggers** | Schedule that runs a Worker (`*/1 * * * *`) | Every minute: re-check the backlog (in case a webhook was lost) and call the api cron endpoints | Replaces `server/scripts/*.sh` and acts as a scaling backstop |
 | **Durable Objects (DO)** | Small stateful objects, one per name, with storage and alarms | One DO per container slot (`transcode-720p-3`, `api-0`): starts, watches and keeps its container alive | Containers can only be started and owned by a DO |
 | **DO Alarms** | A timer that wakes a DO later | Wakes every 60 s while the container runs, so Cloudflare doesn't stop it | Containers stop when their DO goes idle |
@@ -80,7 +80,7 @@ The **Container** is the machine that does the work. The **Durable Object (DO)**
   |                 |             (scaler)               |                        |
   |--1. add 720p--->|                 |                  |                        |
   |     job         |                 |                  |                        |
-  |--webhook /scale------------------>|                  |                        |
+  |--webhook /__scaler/scale-------->|                  |                        |
   |                 |                 |--2. "run!"------>|                        |
   |                 |                 |                  |--3. start()----------->|
   |                 |                 |                  |   set 60 s timer       |  boots
@@ -118,7 +118,7 @@ The **Container** is the machine that does the work. The **Durable Object (DO)**
 | Disk is ephemeral, fresh from the image on every start | Must be fully stateless (main plan PRs 1–5) |
 | Largest instance `standard-4` = 4 vCPU / 12 GiB / 20 GB disk | Caps the source file size (~8 GB; see §5) |
 | Shutdown: SIGTERM, then SIGKILL after 15 min | Longer encodes are lost on a rollout; BullMQ re-queues them |
-| `durable_object` scheduling policy: DO decides when to restart on a new image | Use it, so deploys don't kill running encodes |
+| `durable_object` scheduling policy (beta): DO decides when to restart on a new image | Not yet: `default` policy for now; a rollout may restart an encode (BullMQ retries it) |
 | Images must be `linux/amd64`; 50 GB total image storage | Build all 6 images for amd64 |
 | Can't run Redis / RabbitMQ / Mongo as always-on containers | Use managed services outside Cloudflare |
 
@@ -131,7 +131,7 @@ The **Container** is the machine that does the work. The **Durable Object (DO)**
 | +-----------------------------------+  proxy  +--------------------------------+  |
 | | processor-scaler Worker           |-------->| ApiContainer 1..N (always on)  |  |
 | |  - /*      -> api container       |<--------|  NestJS api, unchanged         |  |
-| |  - /scale  (webhook from api)     | webhook +---------------+----------------+  |
+| |  - /__scaler/scale (api webhook) | webhook +---------------+----------------+  |
 | |  - cron */1: backlog + api crons  |  GET backlog            |                   |
 | |  - for slot < wanted: ensureRunning ---+                    |                   |
 | +-----------------------------------+    | DO slots           |                   |
@@ -201,39 +201,45 @@ There is one container class per image (6 classes). A pool is a class + start en
 
 ## 6. Files
 
+Implemented. The file-by-file table and run steps are in [deploy/cloudflare/README.md](../../deploy/cloudflare/README.md).
+
 ```diff
-+ deploy/cloudflare/processor-scaler/wrangler.jsonc        6 container classes, DO bindings, cron "*/1 * * * *"
-+ deploy/cloudflare/processor-scaler/src/index.ts          fetch (/scale) + scheduled (cron) -> scaleAll()
-+ deploy/cloudflare/processor-scaler/src/scale-pools.ts    backlog -> ensureRunning on slots 0..wanted-1
-+ deploy/cloudflare/processor-scaler/src/pool-config.ts    pool -> class, start env, slot prefix
-+ deploy/cloudflare/processor-scaler/src/pool-container.ts DO: ensureRunning, alarm keep-alive, monitor()
-+ deploy/cloudflare/processor-scaler/src/api-container.ts  DO: always-on api, restart on exit, HTTP proxy
-+ deploy/cloudflare/processor-scaler/src/api-proxy.ts      route non-/scale requests to an api slot
-+ deploy/cloudflare/processor-scaler/src/api-crons.ts      cron -> cleanup-device, verify-bullmq-jobs
-+ deploy/cloudflare/processor-scaler/README.md             secrets, deploy, smoke test
-+ deploy/cloudflare/spike/                                 throwaway TCP egress test (CF-0)
++ deploy/cloudflare/package.json, tsconfig.json             one package for spike + scaler (wrangler, types)
++ deploy/cloudflare/spike/                                  CF-0: connectivity-check container + Worker
++ deploy/cloudflare/processor-scaler/wrangler.jsonc         7 containers (api + 6 images), exports, crons
++ deploy/cloudflare/processor-scaler/src/index.ts           webhook route, api proxy, scheduled()
++ deploy/cloudflare/processor-scaler/src/pools.ts           pool -> image binding + extra env
++ deploy/cloudflare/processor-scaler/src/scale-pools.ts     start free slots until running >= wanted
++ deploy/cloudflare/processor-scaler/src/pool-container.ts  DO per worker slot
++ deploy/cloudflare/processor-scaler/src/api-container.ts   DO per api replica, always on, HTTP proxy
++ deploy/cloudflare/processor-scaler/src/crons.ts           scale / sla + job verification / cleanup
++ server/api  ProcessorController, ProcessorBacklogService, ScaleWebhookService, buildRedisConnection
++ server/workers/* (x6)  WorkerIdleExitService, buildRedisConnection, enableShutdownHooks()
++ server/workers/process-video-worker  WORKER_ROLE = all | transcode | mp4
 ```
 
-`wrangler.jsonc` shape (one entry per class):
+What changed from the first draft of this plan:
 
-```jsonc
-"containers": [
-  { "class_name": "ProcessVideoContainer",
-    "image": "../../../server/workers/process-video-worker/Dockerfile",
-    "instance_type": "standard-4", "max_instances": 33 }
-]
-```
+| Draft | Implemented | Why |
+|---|---|---|
+| `GET /internal/processors/backlog`, bearer `INTERNAL_API_TOKEN` | `GET /api/v1/processors/backlog`, header `x-internal-api-key` | Repo convention: versioned routes + the existing `InternalApiKeyGuard` |
+| Webhook `POST /scale` | `POST /__scaler/scale` | Can't clash with api routes on the shared public host |
+| `durable_object` scheduling policy | `default` policy | `durable_object` is beta and can't be changed later; retry is accepted (§10 #4) |
+| Start slots `0..wanted-1` | Start free slots until `running >= wanted` | A busy slot 5 must not cause an idle slot 0 to restart every minute |
+| Pools 720 / 540 / 480 only | Also 1080p and 360p | Today's ladder still makes those jobs; removed with main plan PR 3 |
+| Bunch of named secrets | Every Worker var / secret is forwarded to containers | One list to maintain: `server/.env` |
+| tus `chunkSize` ≤ 50 MB | Not needed yet | The frontend has no tus upload today |
 
 ## 7. Env and secrets
 
 | Name | Set on | Example |
 |---|---|---|
-| `API_BASE_URL` | scaler (var) | empty = call the api container directly (no public hop) |
 | `API_REPLICAS` | scaler (var) | `1` |
+| `API_PORT` | scaler (var) → containers | `3000` |
 | api env (Mongo URL, JWT secret, GenAI keys, all `BULL_*`, …) | scaler secret → api container env | same as today's `server/.env` |
-| `INTERNAL_API_TOKEN` | scaler + api (secret) | bearer for `GET /internal/processors/backlog` |
-| `SCALE_WEBHOOK_TOKEN` | scaler + api (secret) | bearer for `POST /scale` |
-| `SCALE_WEBHOOK_URL` | api | `https://processor-scaler.<acct>.workers.dev/scale` |
+| `INTERNAL_API_KEY` | scaler secret → api | header `x-internal-api-key` for `GET /api/v1/processors/backlog` |
+| `SCALE_WEBHOOK_TOKEN` | scaler secret → api | bearer for `POST /__scaler/scale` |
+| `SCALE_WEBHOOK_URL` | api | `https://<scaler host>/__scaler/scale` |
 | `REDIS_HOST/PORT/USERNAME/PASSWORD`, `REDIS_TLS=true` | scaler secret → container env | Azure Cache for Redis / Redis Cloud (public TLS endpoint) |
 | `RABBIT_MQ_URL` (amqps) | scaler secret → container env | CloudAMQP |
 | `STORAGE_PROVIDER=s3`, `S3_ENDPOINT`, keys, bucket | scaler secret → container env | `https://<acct>.r2.cloudflarestorage.com` |
@@ -250,7 +256,7 @@ The scaler passes the container env in `start({ env })`, built from its own secr
 | 0–6 | Main plan: stateless core + scale contract | 1 upload → `READY` on docker-compose with R2, no shared disk |
 | CF-1 | Scaler + 1 pool (`transcode-720p`) | 3 uploads → 3 containers → 0 after idle |
 | CF-2 | All 9 pools | Full pipeline on Cloudflare: upload → `READY` |
-| CF-3 | Hardening: `durable_object` policy, size limit, logs | Deploying the scaler mid-encode doesn't lose the job |
+| CF-3 | Hardening: size limit, logs; `durable_object` policy once it leaves beta | Deploying the scaler mid-encode doesn't lose the job |
 | CF-4 | api container + proxy + crons (§9) | Frontend works against the Worker URL; VM switched off |
 | later | Kubernetes + KEDA (`deploy/kubernetes`) | Reuses the same backlog endpoint |
 
@@ -279,7 +285,7 @@ Not an option: rewriting the api as a native Worker. NestJS, Mongoose and BullMQ
 | 1 | Where does the api run? | Always-on Cloudflare container (§9) |
 | 2 | Which managed Redis? | Any cloud's managed Redis (AWS / Azure / Google Cloud), TCP + TLS. **Must be reachable from the internet** (see note) |
 | 3 | Max source size? | 8 GB (`MAX_SOURCE_SIZE_GB=8`) |
-| 4 | Is the 15-min SIGKILL on rollout OK for long encodes? | Yes, BullMQ retry; use the `durable_object` policy |
+| 4 | Is the 15-min SIGKILL on rollout OK for long encodes? | Yes, BullMQ retry; `default` scheduling policy for now |
 | 5 | Resolutions? | 720 / 540 / 480 (`TRANSCODE_HEIGHTS`) |
 | 6 | Pool maxes? | Defaults in §4 |
 | 7 | MinIO for local dev? | No, use R2 everywhere, including local |
@@ -299,7 +305,7 @@ The CF-0 spike checks the chosen provider first.
 ## 11. Checklist
 
 - [ ] CF-0 spike passes (Redis, AMQP, Mongo over TCP).
-- [ ] Set tus `chunkSize` ≤ 50 MB in the frontend Uppy config.
+- [ ] When a tus upload is added to the frontend, keep its `chunkSize` ≤ 50 MB.
 - [ ] Main plan PRs 0–6 merged.
 - [ ] Create the R2 bucket and an S3 API token.
 - [ ] Provision managed Redis, RabbitMQ and Mongo.

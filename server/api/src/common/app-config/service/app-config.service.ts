@@ -67,6 +67,9 @@ export class AppConfigService {
       BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE: this.configService.getOrThrow('BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE'),
       REDIS_HOST: this.configService.getOrThrow('REDIS_HOST'),
       REDIS_PORT: this.configService.getOrThrow('REDIS_PORT'),
+      REDIS_USERNAME: this.configService.get('REDIS_USERNAME'),
+      REDIS_PASSWORD: this.configService.get('REDIS_PASSWORD'),
+      REDIS_TLS: this.configService.get('REDIS_TLS', 'false') === 'true',
       MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES: +this.configService.get(
         'MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES',
         2147483648
@@ -116,6 +119,19 @@ export class AppConfigService {
       SLA_MAX_DELIVERY_ATTEMPTS: +this.configService.get('SLA_MAX_DELIVERY_ATTEMPTS', 5),
       SLA_SLACK_WEBHOOK_URL: this.configService.get('SLA_SLACK_WEBHOOK_URL'),
       INTERNAL_API_KEY: this.configService.get('INTERNAL_API_KEY'),
+      SCALE_WEBHOOK_URL: this.configService.get('SCALE_WEBHOOK_URL'),
+      SCALE_WEBHOOK_TOKEN: this.configService.get('SCALE_WEBHOOK_TOKEN'),
+      DOWNLOAD_MAX_PROCESSORS: +this.configService.get('DOWNLOAD_MAX_PROCESSORS', 10),
+      VALIDATE_MAX_PROCESSORS: +this.configService.get('VALIDATE_MAX_PROCESSORS', 10),
+      THUMBNAIL_MAX_PROCESSORS: +this.configService.get('THUMBNAIL_MAX_PROCESSORS', 10),
+      TRANSCODE_1080P_MAX_PROCESSORS: +this.configService.get('TRANSCODE_1080P_MAX_PROCESSORS', 10),
+      TRANSCODE_720P_MAX_PROCESSORS: +this.configService.get('TRANSCODE_720P_MAX_PROCESSORS', 10),
+      TRANSCODE_540P_MAX_PROCESSORS: +this.configService.get('TRANSCODE_540P_MAX_PROCESSORS', 10),
+      TRANSCODE_480P_MAX_PROCESSORS: +this.configService.get('TRANSCODE_480P_MAX_PROCESSORS', 10),
+      TRANSCODE_360P_MAX_PROCESSORS: +this.configService.get('TRANSCODE_360P_MAX_PROCESSORS', 10),
+      MP4_MAX_PROCESSORS: +this.configService.get('MP4_MAX_PROCESSORS', 3),
+      UPLOAD_MAX_PROCESSORS: +this.configService.get('UPLOAD_MAX_PROCESSORS', 3),
+      AUDIO_MAX_PROCESSORS: +this.configService.get('AUDIO_MAX_PROCESSORS', 5),
     };
     this.validateTranscriptionGenerationEnabled();
     this.validateStorageConfig();

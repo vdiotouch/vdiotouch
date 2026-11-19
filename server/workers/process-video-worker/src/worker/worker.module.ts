@@ -1,26 +1,26 @@
 import { Module } from '@nestjs/common';
+import { DiscoveryModule } from '@nestjs/core';
+import { buildRedisConnection } from '@/src/common/app-config/build-redis-connection';
+import { WorkerIdleExitService } from '@/src/common/idle-exit/worker-idle-exit.service';
 import { AppConfigModule } from '@/src/common/app-config/app-config.module';
-import { ProcessVideoWorker } from '@/src/worker/process-video.worker';
 import { TranscodingService } from '@/src/worker/transcoding.service';
 import { ManifestService } from '@/src/worker/manifest.service';
 import { BullModule } from '@nestjs/bullmq';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { RabbitMQModule } from '../common/rabbit-mq/rabbit-mq.module';
-import { DownloadFileGenerationWorker } from '@/src/worker/download-file-generation.worker';
+import { buildRoleProcessors } from '@/src/worker/build-role-processors';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
 import { UploadService } from '@/src/worker/upload.service';
 
 @Module({
   imports: [
+    DiscoveryModule,
     AppConfigModule,
     RabbitMQModule,
     BullModule.forRootAsync({
       inject: [AppConfigService],
       useFactory: () => ({
-        connection: {
-          host: AppConfigService.appConfig.REDIS_HOST,
-          port: AppConfigService.appConfig.REDIS_PORT,
-        },
+        connection: buildRedisConnection(AppConfigService.appConfig),
       }),
     }),
     BullModule.registerQueueAsync(
@@ -48,10 +48,10 @@ import { UploadService } from '@/src/worker/upload.service';
   ],
   controllers: [],
   providers: [
-    ProcessVideoWorker,
+    WorkerIdleExitService,
+    ...buildRoleProcessors(process.env.WORKER_ROLE),
     TranscodingService,
     ManifestService,
-    DownloadFileGenerationWorker,
     FileStatusPublisher,
     UploadService,
   ],

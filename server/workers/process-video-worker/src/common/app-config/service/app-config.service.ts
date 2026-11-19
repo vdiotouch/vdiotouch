@@ -19,6 +19,10 @@ export class AppConfigService {
       BULL_UPLOAD_JOB_QUEUE: this.configService.getOrThrow('BULL_UPLOAD_JOB_QUEUE'),
       REDIS_HOST: this.configService.getOrThrow('REDIS_HOST'),
       REDIS_PORT: +this.configService.getOrThrow('REDIS_PORT'),
+      REDIS_USERNAME: this.configService.get('REDIS_USERNAME'),
+      REDIS_PASSWORD: this.configService.get('REDIS_PASSWORD'),
+      REDIS_TLS: this.configService.get('REDIS_TLS', 'false') === 'true',
+      WORKER_IDLE_EXIT_SEC: +this.configService.get('WORKER_IDLE_EXIT_SEC', 0),
       BULL_DOWNLOAD_FILE_GENERATION_JOB_QUEUE: this.configService.getOrThrow('BULL_DOWNLOAD_FILE_GENERATION_JOB_QUEUE'),
     };
   }

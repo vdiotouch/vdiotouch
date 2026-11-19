@@ -58,6 +58,10 @@ export interface EnvironmentVariables {
   JWT_SECRET: string;
   REDIS_HOST: string;
   REDIS_PORT: number;
+  // Optional, for managed Redis. Empty locally.
+  REDIS_USERNAME?: string;
+  REDIS_PASSWORD?: string;
+  REDIS_TLS: boolean;
   MIN_AVAILABLE_DISK_SPACE_REQUIRED_IN_BYTES: number;
   RETRY_JOB_ATTEMPT_COUNT: number;
   RETRY_JOB_BACKOFF_IN_MINUTE: number;
@@ -111,4 +115,21 @@ export interface EnvironmentVariables {
   SLA_MAX_DELIVERY_ATTEMPTS: number;
   SLA_SLACK_WEBHOOK_URL?: string;
   INTERNAL_API_KEY?: string;
+
+  // Optional push to an autoscaler after every job add. Empty = autoscalers only poll the backlog endpoint.
+  SCALE_WEBHOOK_URL?: string;
+  SCALE_WEBHOOK_TOKEN?: string;
+
+  // Max worker replicas per pool, reported by GET /api/v1/processors/backlog.
+  DOWNLOAD_MAX_PROCESSORS: number;
+  VALIDATE_MAX_PROCESSORS: number;
+  THUMBNAIL_MAX_PROCESSORS: number;
+  TRANSCODE_1080P_MAX_PROCESSORS: number;
+  TRANSCODE_720P_MAX_PROCESSORS: number;
+  TRANSCODE_540P_MAX_PROCESSORS: number;
+  TRANSCODE_480P_MAX_PROCESSORS: number;
+  TRANSCODE_360P_MAX_PROCESSORS: number;
+  MP4_MAX_PROCESSORS: number;
+  UPLOAD_MAX_PROCESSORS: number;
+  AUDIO_MAX_PROCESSORS: number;
 }

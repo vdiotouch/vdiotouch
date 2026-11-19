@@ -7,6 +7,8 @@ import { HttpExceptionFilter } from '@/src/common/filters/http-exception.filter'
 
 async function bootstrap() {
   const app = await NestFactory.create(ApiModule);
+  // SIGTERM (container restart / rollout) closes BullMQ and RabbitMQ connections cleanly.
+  app.enableShutdownHooks();
   app.enableCors({
     credentials: true,
     origin: true,
