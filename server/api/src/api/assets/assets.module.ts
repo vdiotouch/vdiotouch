@@ -42,6 +42,7 @@ import { ProcessorController } from '@/src/api/assets/controllers/processor.cont
 import { ProcessorBacklogService } from '@/src/api/assets/services/processor-backlog.service';
 import { ScaleWebhookService } from '@/src/api/assets/services/scale-webhook.service';
 import { InternalApiKeyGuard } from '@/src/api/sla/guards/internal-api-key.guard';
+import { MasterManifestService } from '@/src/api/assets/services/master-manifest.service';
 
 @Module({
   imports: [
@@ -350,6 +351,7 @@ import { InternalApiKeyGuard } from '@/src/api/sla/guards/internal-api-key.guard
     ProcessorBacklogService,
     ScaleWebhookService,
     InternalApiKeyGuard,
+    MasterManifestService,
   ],
   exports: [AssetRepository, FileRepository],
 })

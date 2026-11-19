@@ -15,6 +15,7 @@ import { getTranscriptFileName } from 'video-touch-common/dist/utils';
 import { TranscriptService } from '@/src/api/assets/services/transcript.service';
 import { getCdnFileUrl } from '@/src/common/utils';
 import { CdnService } from './cdn.service';
+import { MasterManifestService } from '@/src/api/assets/services/master-manifest.service';
 
 @Injectable()
 export class FileService {
@@ -24,7 +25,8 @@ export class FileService {
     private jobManagerService: JobManagerService,
     private webhookService: WebhookService,
     private transcriptService: TranscriptService,
-    private cdnService: CdnService
+    private cdnService: CdnService,
+    private masterManifestService: MasterManifestService
   ) {}
 
   async updateFileStatus(fileId: string, status: string, details: string, size?: number) {
@@ -86,6 +88,12 @@ export class FileService {
     let assetId = updatedFile.asset_id;
 
     if (updatedFile.latest_status == Constants.FILE_STATUS.READY && updatedFile.type === Constants.FILE_TYPE.PLAYLIST) {
+      if (this.masterManifestService.isEnabled()) {
+        // The master lists the READY renditions, so rewrite it before the CDN cache is cleared.
+        await this.masterManifestService.rebuild(assetId.toString()).catch((err) => {
+          console.log('error while writing master playlist for asset ', assetId.toString(), err);
+        });
+      }
       this.cdnService
         .invalidateCache(updatedFile.asset_id.toString())
         .then(() => {

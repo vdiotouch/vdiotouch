@@ -36,6 +36,8 @@ export interface EnvironmentVariables {
   BULL_540P_PROCESS_VIDEO_JOB_QUEUE: string;
   BULL_720P_PROCESS_VIDEO_JOB_QUEUE: string;
   BULL_1080P_PROCESS_VIDEO_JOB_QUEUE: string;
+  // Rendition ladder, e.g. "720,540,480". Each height needs its BULL_<H>P_PROCESS_VIDEO_JOB_QUEUE and a worker.
+  TRANSCODE_HEIGHTS: number[];
   BULL_THUMBNAIL_GENERATION_JOB_QUEUE: string;
   BULL_DOWNLOAD_FILE_GENERATION_JOB_QUEUE: string;
   BULL_AUDIO_EXTRACTION_JOB_QUEUE: string;

@@ -11,6 +11,7 @@ import { RabbitMQModule } from '../common/rabbit-mq/rabbit-mq.module';
 import { buildRoleProcessors } from '@/src/worker/build-role-processors';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
 import { UploadService } from '@/src/worker/upload.service';
+import { RenditionUploadService } from '@/src/worker/rendition-upload.service';
 import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.module';
 
 @Module({
@@ -56,6 +57,7 @@ import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.
     ManifestService,
     FileStatusPublisher,
     UploadService,
+    RenditionUploadService,
   ],
 })
 export class WorkerModule {}
