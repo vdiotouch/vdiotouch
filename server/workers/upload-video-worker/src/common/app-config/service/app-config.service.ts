@@ -12,6 +12,8 @@ export class AppConfigService {
       RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE: this.configService.getOrThrow('RABBIT_MQ_VIDEO_TOUCH_TOPIC_EXCHANGE'),
       RABBIT_MQ_URL: this.configService.getOrThrow('RABBIT_MQ_URL'),
       AWS_S3_BUCKET_NAME: this.configService.get('AWS_S3_BUCKET_NAME'),
+      S3_ENDPOINT: this.configService.get('S3_ENDPOINT'),
+      S3_FORCE_PATH_STYLE: this.configService.get('S3_FORCE_PATH_STYLE', 'false') === 'true',
       AWS_REGION: this.configService.get('AWS_REGION'),
       AWS_SECRET_ACCESS_KEY: this.configService.get('AWS_SECRET_ACCESS_KEY'),
       AWS_ACCESS_KEY_ID: this.configService.get('AWS_ACCESS_KEY_ID'),

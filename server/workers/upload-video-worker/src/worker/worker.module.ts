@@ -10,6 +10,7 @@ import { BullModule } from '@nestjs/bullmq';
 import { AppConfigService } from '@/src/common/app-config/service/app-config.service';
 import { BunnyModule } from '@/src/common/bunny/bunny.module';
 import { R2Module } from '@/src/common/r2/r2.module';
+import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { R2Module } from '@/src/common/r2/r2.module';
     AwsModule,
     BunnyModule,
     R2Module,
+    ObjectStorageModule,
     BullModule.forRootAsync({
       inject: [AppConfigService],
       useFactory: () => ({

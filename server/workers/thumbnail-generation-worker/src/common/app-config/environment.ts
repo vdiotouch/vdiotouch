@@ -9,6 +9,9 @@ export interface EnvironmentVariables {
   AWS_SECRET_ACCESS_KEY: string;
   AWS_ACCESS_KEY_ID: string;
   AWS_S3_BUCKET_NAME: string;
+  // Optional, STORAGE_PROVIDER=s3 only: another S3-compatible store (e.g. GCS interop). Empty = AWS.
+  S3_ENDPOINT?: string;
+  S3_FORCE_PATH_STYLE: boolean;
   REDIS_HOST: string;
   REDIS_PORT: number;
   // Optional, for managed Redis. Empty locally.

@@ -42,6 +42,19 @@ export class AppConfigService {
       CLOUDFLARE_ACCOUNT_ID: this.configService.get('CLOUDFLARE_ACCOUNT_ID'),
       CLOUDFLARE_API_TOKEN: this.configService.get('CLOUDFLARE_API_TOKEN'),
       CLOUDFLARE_AI_MODEL: this.configService.get('CLOUDFLARE_AI_MODEL'),
+      // Object storage (bucket shared by all services). Optional until a job uses it.
+      STORAGE_PROVIDER: this.configService.get('STORAGE_PROVIDER'),
+      AWS_ACCESS_KEY_ID: this.configService.get('AWS_ACCESS_KEY_ID'),
+      AWS_SECRET_ACCESS_KEY: this.configService.get('AWS_SECRET_ACCESS_KEY'),
+      AWS_REGION: this.configService.get('AWS_REGION'),
+      AWS_S3_BUCKET_NAME: this.configService.get('AWS_S3_BUCKET_NAME'),
+      S3_ENDPOINT: this.configService.get('S3_ENDPOINT'),
+      S3_FORCE_PATH_STYLE: this.configService.get('S3_FORCE_PATH_STYLE', 'false') === 'true',
+      R2_ACCOUNT_ID: this.configService.get('R2_ACCOUNT_ID'),
+      R2_ACCESS_KEY_ID: this.configService.get('R2_ACCESS_KEY_ID'),
+      R2_SECRET_ACCESS_KEY: this.configService.get('R2_SECRET_ACCESS_KEY'),
+      R2_BUCKET_NAME: this.configService.get('R2_BUCKET_NAME'),
+      R2_ENDPOINT: this.configService.get('R2_ENDPOINT'),
     };
   }
 }

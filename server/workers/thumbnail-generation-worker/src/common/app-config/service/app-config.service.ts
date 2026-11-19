@@ -20,6 +20,8 @@ export class AppConfigService {
       AWS_SECRET_ACCESS_KEY: this.configService.get('AWS_SECRET_ACCESS_KEY'),
       AWS_ACCESS_KEY_ID: this.configService.get('AWS_ACCESS_KEY_ID'),
       AWS_S3_BUCKET_NAME: this.configService.get('AWS_S3_BUCKET_NAME'),
+      S3_ENDPOINT: this.configService.get('S3_ENDPOINT'),
+      S3_FORCE_PATH_STYLE: this.configService.get('S3_FORCE_PATH_STYLE', 'false') === 'true',
       REDIS_HOST: this.configService.getOrThrow('REDIS_HOST'),
       REDIS_PORT: +this.configService.getOrThrow('REDIS_PORT'),
       REDIS_USERNAME: this.configService.get('REDIS_USERNAME'),

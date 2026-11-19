@@ -24,6 +24,19 @@ export class AppConfigService {
       REDIS_PASSWORD: this.configService.get('REDIS_PASSWORD'),
       REDIS_TLS: this.configService.get('REDIS_TLS', 'false') === 'true',
       WORKER_IDLE_EXIT_SEC: +this.configService.get('WORKER_IDLE_EXIT_SEC', 0),
+      // Object storage (bucket shared by all services). Optional until a job uses it.
+      STORAGE_PROVIDER: this.configService.get('STORAGE_PROVIDER'),
+      AWS_ACCESS_KEY_ID: this.configService.get('AWS_ACCESS_KEY_ID'),
+      AWS_SECRET_ACCESS_KEY: this.configService.get('AWS_SECRET_ACCESS_KEY'),
+      AWS_REGION: this.configService.get('AWS_REGION'),
+      AWS_S3_BUCKET_NAME: this.configService.get('AWS_S3_BUCKET_NAME'),
+      S3_ENDPOINT: this.configService.get('S3_ENDPOINT'),
+      S3_FORCE_PATH_STYLE: this.configService.get('S3_FORCE_PATH_STYLE', 'false') === 'true',
+      R2_ACCOUNT_ID: this.configService.get('R2_ACCOUNT_ID'),
+      R2_ACCESS_KEY_ID: this.configService.get('R2_ACCESS_KEY_ID'),
+      R2_SECRET_ACCESS_KEY: this.configService.get('R2_SECRET_ACCESS_KEY'),
+      R2_BUCKET_NAME: this.configService.get('R2_BUCKET_NAME'),
+      R2_ENDPOINT: this.configService.get('R2_ENDPOINT'),
     };
   }
 }
