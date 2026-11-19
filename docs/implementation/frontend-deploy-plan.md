@@ -265,7 +265,7 @@ On the free plan, `run_worker_first` requests count against the Worker free limi
 | PR | Content | Done when |
 |---|---|---|
 | F-1 | `deploy/cloudflare/frontend/` + `frontend/public/_headers` + README | `app.<domain>` serves the app; `/runtime-env.js` shows the vars |
-| F-2 (optional) | Release CI job: build + `wrangler deploy` with `CLOUDFLARE_API_TOKEN` | A release deploys the frontend |
+| F-2 | `.github/workflows/deploy-frontend-cloudflare.yml`: on release (CalVer) or by hand; opt-in via repo variable `CLOUDFLARE_FRONTEND_DEPLOY`; repo variables override `wrangler.jsonc` vars | A release deploys the frontend |
 
 ## 6. Open questions
 
@@ -274,11 +274,11 @@ On the free plan, `run_worker_first` requests count against the Worker free limi
 | 1 | Frontend and API domains? | `app.<domain>`, `api.<domain>` |
 | 2 | Vars in `wrangler.jsonc` (committed) or `wrangler secret` / dashboard? | `wrangler.jsonc`: none are secret, all reach the browser anyway |
 | 3 | Hide source maps on Cloudflare? | No, serve them as today |
-| 4 | CI deploy now? | Later (F-2) |
+| 4 | CI deploy now? | Done in F-2 (opt-in) |
 
 ## 7. Checklist
 
 - [ ] Answer §6
 - [ ] F-1: Cloudflare Worker + static assets + `_headers`
 - [ ] Deploy, check `/runtime-env.js`, log in, import a video, play it
-- [ ] F-2 (optional): CI deploy
+- [ ] F-2: set `CLOUDFLARE_FRONTEND_DEPLOY`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`; run the workflow once by hand

@@ -150,3 +150,29 @@ npm run web:rollback      # previous version, if needed
 - [ ] `/runtime-env.js` shows the right API URL.
 - [ ] Reload on a deep link (e.g. `/videos/<id>`) shows the page, not a 404.
 - [ ] Log in, list videos, open one, play it.
+
+### Deploy from CI (F-2)
+
+`.github/workflows/deploy-frontend-cloudflare.yml` runs the same `web:build` + `wrangler deploy` on GitHub.
+
+```
+GitHub release 2026.11.1 (or "Run workflow")
+  -> check CLOUDFLARE_FRONTEND_DEPLOY == "true"   (else skipped)
+  -> check CalVer tag                             (release only)
+  -> npm install (deploy/cloudflare), npm run web:build (frontend)
+  -> wrangler deploy --config frontend/wrangler.jsonc [--var overrides] --message <tag>
+```
+
+| GitHub setting | Kind | Value |
+|---|---|---|
+| `CLOUDFLARE_FRONTEND_DEPLOY` | Repo variable | `true` to turn the job on |
+| `CLOUDFLARE_API_TOKEN` | Secret | API token with "Edit Cloudflare Workers" permission |
+| `CLOUDFLARE_ACCOUNT_ID` | Secret | Cloudflare account id |
+| `NEXT_PUBLIC_VIDEO_TOUCH_API_URL`, … (the six vars above) | Repo variables, optional | Override the `wrangler.jsonc` value for CI deploys; empty = keep the file's value |
+
+| Trigger | When |
+|---|---|
+| `release: published` | With every CalVer release, next to the Docker image build |
+| `workflow_dispatch` | By hand from the Actions tab (redeploy after a var change) |
+
+Rollback still works the same: `npm run web:rollback`, or pick an older deployment in the Cloudflare dashboard (each one is labelled with its release tag).
