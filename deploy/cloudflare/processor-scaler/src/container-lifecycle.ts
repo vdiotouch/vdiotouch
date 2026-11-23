@@ -7,6 +7,26 @@ const KEEP_ALIVE_INTERVAL_MS = 60 * 1000;
 
 const LISTEN_RETRY_DELAY_MS = 500;
 
+// Durable Object storage key: fingerprint of the env the running container was started with.
+const ENV_FINGERPRINT_KEY = 'container_env_fingerprint';
+
+/** SHA-256 of the container env (keys sorted), so a settings change after a deploy can be noticed. */
+const fingerprintEnv = async (containerEnv: Record<string, string>): Promise<string> => {
+  const entries = Object.keys(containerEnv)
+    .sort()
+    .map((key) => [key, containerEnv[key]]);
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(entries)));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('');
+};
+
+/**
+ * True when the running container was started with exactly this env. A container only reads its env at start,
+ * so after a deploy that changes vars or secrets it keeps the old values until it is restarted.
+ * A container started before fingerprints existed counts as changed.
+ */
+export const isStartedWithEnv = async (ctx: DurableObjectState, containerEnv: Record<string, string>) =>
+  (await ctx.storage.get<string>(ENV_FINGERPRINT_KEY)) === (await fingerprintEnv(containerEnv));
+
 export const getContainer = (ctx: DurableObjectState): Container => {
   if (!ctx.container) {
     throw new Error('no container is configured for this Durable Object');
@@ -21,6 +41,7 @@ export const startContainer = async (ctx: DurableObjectState, containerEnv: Reco
     return;
   }
   container.start({ env: containerEnv, enableInternet: true });
+  await ctx.storage.put(ENV_FINGERPRINT_KEY, await fingerprintEnv(containerEnv));
   console.log(`${label}: container started`);
   ctx.waitUntil(
     container

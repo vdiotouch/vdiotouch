@@ -74,6 +74,7 @@ export class AppConfigService {
       REDIS_USERNAME: this.configService.get('REDIS_USERNAME'),
       REDIS_PASSWORD: this.configService.get('REDIS_PASSWORD'),
       REDIS_TLS: this.configService.get('REDIS_TLS', 'false') === 'true',
+      BULL_PREFIX: this.configService.get('BULL_PREFIX', 'bull'),
       RETRY_JOB_ATTEMPT_COUNT: +this.configService.get('RETRY_JOB_ATTEMPT_COUNT', 3),
       RETRY_JOB_BACKOFF_IN_MINUTE: +this.configService.get('RETRY_JOB_BACKOFF_IN_MINUTE', 10),
       GOTIPATH_CDN_SECRET: this.configService.getOrThrow('GOTIPATH_CDN_SECRET'),

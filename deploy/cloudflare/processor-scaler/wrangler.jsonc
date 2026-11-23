@@ -9,6 +9,9 @@
 //   upload         -> UploadContainer       -> UPLOAD_CONTAINER         (pool: upload)
 //   audio          -> AudioContainer        -> AUDIO_CONTAINER          (pool: audio)
 //
+// Each container has its own "observability" block: without it, the container's console output (NestJS logs)
+// is not collected. Dashboard: Workers & Pages -> vdio-touch-processor-scaler -> Containers -> <name> -> Logs.
+//
 // max_instances must be >= the sum of the *_MAX_PROCESSORS of the pools on that image
 // (process-video: 5 transcode heights x 10 + mp4 3 = 53).
 {
@@ -22,7 +25,7 @@
     "API_REPLICAS": "1",
     "API_PORT": "3000",
     "WORKER_IDLE_EXIT_SEC": "60",
-    "REDIS_TLS": "true"
+    "REDIS_TLS": "false"
   },
 
   "triggers": {
@@ -30,42 +33,54 @@
   },
 
   "containers": [
-    { "name": "api", "image": "../../../server/api/Dockerfile", "instance_type": "standard-1", "max_instances": 3 },
+    {
+      "name": "api",
+      "image": "../../../server/api/Dockerfile",
+      "instance_type": "standard-1",
+      "max_instances": 3,
+      "observability": { "logs": { "enabled": true } }
+    },
     {
       "name": "download",
       "image": "../../../server/workers/download-video-worker/Dockerfile",
       "instance_type": "standard-1",
-      "max_instances": 10
+      "max_instances": 10,
+      "observability": { "logs": { "enabled": true } }
     },
     {
       "name": "validate",
       "image": "../../../server/workers/validate-video-worker/Dockerfile",
       "instance_type": "basic",
-      "max_instances": 10
+      "max_instances": 10,
+      "observability": { "logs": { "enabled": true } }
     },
     {
       "name": "thumbnail",
       "image": "../../../server/workers/thumbnail-generation-worker/Dockerfile",
       "instance_type": "standard-1",
-      "max_instances": 10
+      "max_instances": 10,
+      "observability": { "logs": { "enabled": true } }
     },
     {
       "name": "process-video",
       "image": "../../../server/workers/process-video-worker/Dockerfile",
       "instance_type": "standard-4",
-      "max_instances": 53
+      "max_instances": 53,
+      "observability": { "logs": { "enabled": true } }
     },
     {
       "name": "upload",
       "image": "../../../server/workers/upload-video-worker/Dockerfile",
       "instance_type": "standard-1",
-      "max_instances": 3
+      "max_instances": 3,
+      "observability": { "logs": { "enabled": true } }
     },
     {
       "name": "audio",
       "image": "../../../server/workers/audio-worker/Dockerfile",
       "instance_type": "standard-2",
-      "max_instances": 5
+      "max_instances": 5,
+      "observability": { "logs": { "enabled": true } }
     }
   ],
 

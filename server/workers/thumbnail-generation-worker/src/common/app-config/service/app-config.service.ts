@@ -27,6 +27,7 @@ export class AppConfigService {
       REDIS_USERNAME: this.configService.get('REDIS_USERNAME'),
       REDIS_PASSWORD: this.configService.get('REDIS_PASSWORD'),
       REDIS_TLS: this.configService.get('REDIS_TLS', 'false') === 'true',
+      BULL_PREFIX: this.configService.get('BULL_PREFIX', 'bull'),
       WORKER_IDLE_EXIT_SEC: +this.configService.get('WORKER_IDLE_EXIT_SEC', 0),
       STORAGE_PROVIDER: this.configService.getOrThrow('STORAGE_PROVIDER'),
       R2_ACCOUNT_ID: this.configService.get('R2_ACCOUNT_ID'),

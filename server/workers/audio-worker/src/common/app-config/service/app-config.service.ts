@@ -21,6 +21,7 @@ export class AppConfigService {
       REDIS_USERNAME: this.configService.get('REDIS_USERNAME'),
       REDIS_PASSWORD: this.configService.get('REDIS_PASSWORD'),
       REDIS_TLS: this.configService.get('REDIS_TLS', 'false') === 'true',
+      BULL_PREFIX: this.configService.get('BULL_PREFIX', 'bull'),
       WORKER_IDLE_EXIT_SEC: +this.configService.get('WORKER_IDLE_EXIT_SEC', 0),
       BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE: this.configService.getOrThrow('BULL_AUDIO_TRANSCRIPTION_JOB_QUEUE'),
       TRANSCRIPTION_GENERATION_ENABLED: this.configService.get('TRANSCRIPTION_GENERATION_ENABLED') === 'true',

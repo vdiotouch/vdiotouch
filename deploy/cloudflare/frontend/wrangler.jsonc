@@ -18,13 +18,19 @@
 
   // Runtime settings sent to the browser via /runtime-env.js. None are secret: they all end up in the page.
   "vars": {
-    "NEXT_PUBLIC_VIDEO_TOUCH_API_URL": "https://api.example.com",
+    "NEXT_PUBLIC_VIDEO_TOUCH_API_URL": "https://vdio-touch-processor-scaler.10mstech.workers.dev",
     "NEXT_PUBLIC_VIDEO_LIST_PAGE_SIZE": "10",
     "NEXT_PUBLIC_UPDATE_DATA_INTERVAL_IN_SECONDS": "5",
     "AUTH_COOKIE_REFRESH": "false",
+    // Empty = the app's default (support@vdiotouch.com).
     "SUPPORT_EMAIL": "",
-    "MAX_VIDEO_SIZE_MB": ""
-  }
+    // The api's MAX_VIDEO_SIZE_IN_BYTES (10737418240) in MB. Only the "Max file size" hint; the api enforces it.
+    "MAX_VIDEO_SIZE_MB": "10240"
+  },
+
+  // Explicit, to silence Wrangler's warnings: workers.dev URL on (until a custom domain is set), no preview URLs.
+  "workers_dev": true,
+  "preview_urls": false
 
   // Custom domain: uncomment once the zone is on Cloudflare. Without it the site is on
   // https://vdio-touch-web.<account>.workers.dev

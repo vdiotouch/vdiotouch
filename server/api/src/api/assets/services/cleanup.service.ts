@@ -35,7 +35,7 @@ export class CleanupService {
     const sourceKeys = await this.objectStorageService.listKeys(SOURCES_PREFIX);
     const assetIds = sourceKeys
       .map((key) => key.slice(SOURCES_PREFIX.length).split('/')[0])
-      .filter((assetId) => mongoose.Types.ObjectId.isValid(assetId));
+      .filter((assetId) => mongoose.isValidObjectId(assetId));
     const assets = await this.assetRepository.find({
       _id: { $in: assetIds.map((assetId) => mongoose.Types.ObjectId(assetId)) },
     });
