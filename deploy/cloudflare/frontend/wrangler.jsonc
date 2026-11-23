@@ -18,7 +18,9 @@
 
   // Runtime settings sent to the browser via /runtime-env.js. None are secret: they all end up in the page.
   "vars": {
-    "NEXT_PUBLIC_VIDEO_TOUCH_API_URL": "https://vdio-touch-processor-scaler.10mstech.workers.dev",
+    // Placeholder. Real value: repo variable NEXT_PUBLIC_VIDEO_TOUCH_API_URL (CI), or locally
+    // `wrangler deploy --var NEXT_PUBLIC_VIDEO_TOUCH_API_URL:https://...`.
+    "NEXT_PUBLIC_VIDEO_TOUCH_API_URL": "https://api.example.com",
     "NEXT_PUBLIC_VIDEO_LIST_PAGE_SIZE": "10",
     "NEXT_PUBLIC_UPDATE_DATA_INTERVAL_IN_SECONDS": "5",
     "AUTH_COOKIE_REFRESH": "false",
