@@ -25,6 +25,7 @@ import { AudioStorageService } from '@/src/worker/audio-storage.service';
       inject: [AppConfigService],
       useFactory: () => ({
         connection: buildRedisConnection(AppConfigService.appConfig),
+        prefix: AppConfigService.appConfig.BULL_PREFIX,
       }),
     }),
     BullModule.registerQueueAsync(

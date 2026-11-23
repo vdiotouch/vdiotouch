@@ -64,6 +64,8 @@ export interface EnvironmentVariables {
   REDIS_USERNAME?: string;
   REDIS_PASSWORD?: string;
   REDIS_TLS: boolean;
+  // BullMQ key prefix. Use "{bull}" on a Redis Cluster (keeps each queue's keys on one shard). Same in every service.
+  BULL_PREFIX: string;
   RETRY_JOB_ATTEMPT_COUNT: number;
   RETRY_JOB_BACKOFF_IN_MINUTE: number;
   TRANSCRIPTION_GENERATION_ENABLED: boolean;

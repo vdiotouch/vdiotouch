@@ -13,6 +13,8 @@ export interface EnvironmentVariables {
   REDIS_USERNAME?: string;
   REDIS_PASSWORD?: string;
   REDIS_TLS: boolean;
+  // BullMQ key prefix. Use "{bull}" on a Redis Cluster (keeps each queue's keys on one shard). Same in every service.
+  BULL_PREFIX: string;
   // Seconds without an active job before the process exits. Empty or 0 = never (docker-compose).
   WORKER_IDLE_EXIT_SEC: number;
   TRANSCRIPTION_GENERATION_ENABLED: boolean;

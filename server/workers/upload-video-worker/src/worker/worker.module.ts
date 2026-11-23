@@ -19,6 +19,7 @@ import { ObjectStorageModule } from '@/src/common/object-storage/object-storage.
       inject: [AppConfigService],
       useFactory: () => ({
         connection: buildRedisConnection(AppConfigService.appConfig),
+        prefix: AppConfigService.appConfig.BULL_PREFIX,
       }),
     }),
     BullModule.registerQueueAsync({
