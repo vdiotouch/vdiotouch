@@ -6,6 +6,11 @@ import { AppConfigService } from '@/src/common/app-config/service/app-config.ser
 
 const IDLE_CHECK_INTERVAL_MS = 10 * 1000;
 
+// Node runs as PID 1 in the container, where the kernel ignores a default-handled SIGTERM: once Nest has
+// closed everything and re-sends SIGTERM to itself, any handle still open (e.g. the RabbitMQ socket) keeps
+// the process (and the paid container) alive forever. No job is active on this path, so exiting is safe.
+const FORCE_EXIT_AFTER_MS = 30 * 1000;
+
 /**
  * Stops this process after WORKER_IDLE_EXIT_SEC seconds without an active job, so a platform that runs one
  * container per replica (Cloudflare Containers) gets the replica back when the queue is empty.
@@ -67,6 +72,11 @@ export class WorkerIdleExitService implements OnApplicationBootstrap, OnApplicat
     console.log(`no active job for ${Math.round(idleMs / 1000)}s, shutting down`);
     clearInterval(this.timer);
     this.timer = null;
+    // unref: does not itself keep the process alive; fires only if something else does.
+    setTimeout(() => {
+      console.log(`still running ${FORCE_EXIT_AFTER_MS / 1000}s after idle shutdown, forcing exit`);
+      process.exit(0);
+    }, FORCE_EXIT_AFTER_MS).unref();
     process.kill(process.pid, 'SIGTERM');
   }
 }
