@@ -80,7 +80,9 @@
       "image": "../../../server/workers/audio-worker/Dockerfile",
       "instance_type": "standard-2",
       "max_instances": 5,
-      "observability": { "logs": { "enabled": true } }
+      "observability": { "logs": { "enabled": true } },
+      // Gemini API rejects some countries (e.g. Hong Kong: "User location is not supported"); APAC is left out.
+      "constraints": { "regions": ["WEUR", "EEUR", "ENAM", "WNAM"] }
     }
   ],
 
