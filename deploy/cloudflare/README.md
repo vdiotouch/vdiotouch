@@ -36,7 +36,7 @@ browser ---HTTPS---> | /__scaler/scale (POST) ---> scale one pool        |
 api ---webhook-----> |                                                    |
 cron (1 / 5 / 60m) > | GET /api/v1/processors/backlog (via api container) |
                      |   for each pool: start free slots until            |
-                     |   running >= wanted                                |
+                     |   running >= wanted; pool idle 10 min -> stop      |
                      +-----------------------+----------------------------+
                                              | start({ env })
                                              v
@@ -48,7 +48,8 @@ cron (1 / 5 / 60m) > | GET /api/v1/processors/backlog (via api container) |
 | Rule | Where |
 |---|---|
 | `wanted = min(waiting + active, max)` per pool | api `ProcessorBacklogService` |
-| The scaler only **starts** containers; workers stop themselves when idle | `scale-pools.ts`, worker `WorkerIdleExitService` |
+| Workers stop themselves after `WORKER_IDLE_EXIT_SEC` without a job; a job that vanished from Redis is detected and no longer counted | worker `WorkerIdleExitService` |
+| Safety net: a slot still running after its pool has had no waiting or active job for 10 min gets SIGTERM, and is destroyed 30 s later | `scale-pools.ts`, `PoolContainer.syncPoolState` |
 | Fixed slot names `<pool>-0 … <pool>-<max-1>` cap the pool at `max` | `scale-pools.ts` |
 | The api never scales to 0; its alarm restarts it if it stops | `api-container.ts` |
 | Container env = every Worker var / secret + the pool's overrides | `container-env.ts`, `pools.ts` |
