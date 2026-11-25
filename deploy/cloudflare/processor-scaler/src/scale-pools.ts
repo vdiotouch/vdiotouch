@@ -11,8 +11,10 @@ export interface ScaleResult {
 
 /**
  * Makes sure at least `wanted` slots of the pool are running. Slots are named "<pool>-0" … "<pool>-<max-1>",
- * so a pool can never run more than `max` containers. It only ever starts slots: running workers stop
- * themselves once the queue is empty (WORKER_IDLE_EXIT_SEC), so a job in progress is never cut off.
+ * so a pool can never run more than `max` containers. Running workers stop themselves once the queue is empty
+ * (WORKER_IDLE_EXIT_SEC). As a safety net, every slot is told whether the pool is idle (`wanted` 0 = no waiting
+ * and no active job), and a slot still running after a long idle stretch stops itself (PoolContainer
+ * syncPoolState). A job in progress counts as active, so it is never cut off.
  */
 export const scalePool = async (env: Env, backlog: PoolBacklog): Promise<ScaleResult> => {
   const result: ScaleResult = { pool: backlog.pool, wanted: backlog.wanted, running: 0, started: [] };
@@ -21,14 +23,15 @@ export const scalePool = async (env: Env, backlog: PoolBacklog): Promise<ScaleRe
     console.log(`unknown pool from api: ${backlog.pool}, skipped`);
     return result;
   }
-  if (backlog.wanted === 0) {
-    return result;
-  }
 
   const namespace = env[definition.binding];
   const slotNames = Array.from({ length: backlog.max }, (_, i) => `${backlog.pool}-${i}`);
-  const runningFlags = await Promise.all(slotNames.map((name) => namespace.getByName(name).isRunning()));
+  const poolIdle = backlog.wanted === 0;
+  const runningFlags = await Promise.all(slotNames.map((name) => namespace.getByName(name).syncPoolState(poolIdle)));
   result.running = runningFlags.filter(Boolean).length;
+  if (poolIdle) {
+    return result;
+  }
 
   const freeSlots = slotNames.filter((_, i) => !runningFlags[i]);
   const slotsToStart = freeSlots.slice(0, Math.max(0, backlog.wanted - result.running));
