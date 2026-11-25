@@ -5,7 +5,7 @@ import { checkIsLastAttempt } from '@/src/common/utils';
 import { FileStatusPublisher } from '@/src/worker/file-status.publisher';
 import { DownloadFileService } from '@/src/worker/download-file.service';
 
-@Processor(process.env.BULL_DOWNLOAD_FILE_GENERATION_JOB_QUEUE, { lockDuration: 1000 * 60 * 60 * 1 }) // 2 hours lock duration
+@Processor(process.env.BULL_DOWNLOAD_FILE_GENERATION_JOB_QUEUE, { lockDuration: 1000 * 60 * 60 * 1 }) // 1 hour lock duration
 export class DownloadFileGenerationWorker extends WorkerHost {
   constructor(
     private fileStatusPublisher: FileStatusPublisher,
